@@ -95,10 +95,7 @@ M.html_to_md = function(html)
     result = "",
   }
 
-  ---@param node TSNode
-  function transpiler:get_node_text(node)
-    local row_start, col_start = node:start()
-    local row_end, col_end = node:end_()
+  function transpiler:get_text_range(row_start, col_start, row_end, col_end)
     local extracted_lines = {}
 
     for i = row_start, row_end do
@@ -116,6 +113,15 @@ M.html_to_md = function(html)
     end
 
     return table.concat(extracted_lines, "\n")
+  end
+
+  ---@param node TSNode
+  function transpiler:get_node_text(node)
+    local row_start, col_start = node:start()
+    local row_end, col_end = node:end_()
+    local text = self:get_text_range(row_start, col_start, row_end, col_end)
+
+    return text
   end
 
   ---@param node TSNode
@@ -154,6 +160,7 @@ M.html_to_md = function(html)
   end
 
   ---@param node TSNode
+  ---@return TSNode[]
   function transpiler:filter_tag_children(node)
     local children = node:named_children()
     local filtered = vim.tbl_filter(function(child)
@@ -180,8 +187,13 @@ M.html_to_md = function(html)
 
       if tag_type == "start_tag" then
         local children = self:filter_tag_children(node)
+
         for _, child in ipairs(children) do
-          result = result .. self:eval(child)
+          if tag_name == "pre" then
+            result = result .. self:eval_pre_child(child)
+          else
+            result = result .. self:eval(child)
+          end
         end
       end
 
@@ -225,6 +237,31 @@ M.html_to_md = function(html)
     end
 
     result = result:gsub("\n\n\n+", "\n\n")
+
+    return result
+  end
+
+  ---@param node TSNode
+  function transpiler:eval_pre_child(node)
+    local result = self:eval(node)
+    local sibling = node:next_named_sibling()
+
+    if sibling then
+      local c_row_end, c_col_end = node:end_()
+      local s_row_start, s_col_start = sibling:start()
+      local row, col = c_row_end, c_col_end
+
+      while row ~= s_row_start or col ~= s_col_start do
+        local char = self:get_text_range(row, col, row, col + 1)
+        if char ~= "" then
+          result = result .. char
+          col = col + 1
+        else
+          result = result .. "\n"
+          row, col = row + 1, 0
+        end
+      end
+    end
 
     return result
   end

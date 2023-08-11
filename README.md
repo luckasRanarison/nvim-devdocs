@@ -86,6 +86,10 @@ Available commands:
 
 Commands support completion.
 
+> ℹ️ **NOTE**:<br>
+> At the moment, Telescope's Previewer is available only when opening a specific documentation.
+> E.g. `:DevdocsOpen javascript` 
+
 ## TODO
 
 - More search options

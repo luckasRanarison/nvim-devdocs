@@ -67,7 +67,7 @@ Here is the default configuration:
     width = 100,
     border = "rounded",
   },
-  wrap = false, -- text wrap
+  wrap = false, -- text wrap, only applies to floating window
   ensure_installed = {}, -- get automatically installed
 }
 ```
@@ -81,14 +81,14 @@ Available commands:
 - `DevdocsUninstall`: Uninstall documentation, 0-n args.
 - `DevdocsOpen`: Open documentation in a normal buffer, 0 or 1 arg.
 - `DevdocsOpenFloat`: Open documentation in a floating window, 0 or 1 arg.
-- `DevdocsUpdate`: Update documentation, 1-n args.
+- `DevdocsUpdate`: Update documentation, 0-n args.
 - `DevdocsUpdateAll`: Update all documentations.
 
-Commands support completion.
+Commands support completion, and the Telescope picker will be used when no argument is provided.
 
 > ℹ️ **NOTE**:<br>
 > At the moment, Telescope's Previewer is available only when opening a specific documentation.
-> E.g. `:DevdocsOpen javascript` 
+> E.g. `:DevdocsOpen javascript`
 
 ## TODO
 

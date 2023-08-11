@@ -53,7 +53,7 @@ M.open_doc_float = function(args)
     local entries = operations.get_entries(arg)
 
     if entries then
-      pickers.open_doc_entry_picker(entries, false)
+      pickers.open_doc_entry_picker(entries, true)
     else
       notify.log_err(arg .. " documentation is not installed")
     end

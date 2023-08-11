@@ -13,6 +13,16 @@ local normalize_html = function(str)
   return str
 end
 
+local is_inline_tag = function(tag_name)
+  -- stylua: ignore
+  local inline_tags = {
+    "span", "a", "strong", "em", "abbr", "code", "i",
+    "s", "sub", "sup", "mark", "small", "var", "kbd",
+  }
+
+  return vim.tbl_contains(inline_tags, tag_name)
+end
+
 local tag_mappings = {
   h1 = { left = "# ", right = "\n\n" },
   h2 = { left = "## ", right = "\n\n" },
@@ -36,10 +46,13 @@ local tag_mappings = {
   samp = { left = "`", right = "`" },
   var = { left = "`", right = "`" },
   kbd = { left = "`", right = "`" },
+  mark = { left = "`", right = "`" },
   b = { left = "`", right = "`" },
   strong = { left = "**", right = "**" },
-  em = { left = " _", right = "_ " },
-  small = { left = " _", right = "_ " },
+  i = { left = "_", right = "_" },
+  s = { left = "~~", right = "~~" },
+  em = { left = "_", right = "_" },
+  small = { left = "_", right = "_" },
   sup = { left = "^", right = "^" },
   blockquote = { left = "> " },
   summary = { left = "<", right = ">" },
@@ -126,8 +139,13 @@ M.html_to_md = function(html)
 
   ---@param node TSNode
   function transpiler:get_node_tag_name(node)
-    local tag_node = node:named_child():named_child()
-    local tag_name = self:get_node_text(tag_node)
+    local tag_name = nil
+    local child = node:named_child()
+
+    if child then
+      local tag_node = child:named_child()
+      tag_name = self:get_node_text(tag_node)
+    end
 
     return tag_name
   end
@@ -189,11 +207,7 @@ M.html_to_md = function(html)
         local children = self:filter_tag_children(node)
 
         for _, child in ipairs(children) do
-          if tag_name == "pre" then
-            result = result .. self:eval_pre_child(child)
-          else
-            result = result .. self:eval(child)
-          end
+          result = result .. self:eval_child(child, tag_name)
         end
       end
 
@@ -236,30 +250,35 @@ M.html_to_md = function(html)
       end
     end
 
-    result = result:gsub("\n\n\n+", "\n\n")
-
     return result
   end
 
   ---@param node TSNode
-  function transpiler:eval_pre_child(node)
+  function transpiler:eval_child(node, parent_tag)
     local result = self:eval(node)
+    local tag_name = self:get_node_tag_name(node)
     local sibling = node:next_named_sibling()
 
+    -- check if there should be additional spaces/characters between two elements
     if sibling then
       local c_row_end, c_col_end = node:end_()
       local s_row_start, s_col_start = sibling:start()
-      local row, col = c_row_end, c_col_end
 
-      while row ~= s_row_start or col ~= s_col_start do
-        local char = self:get_text_range(row, col, row, col + 1)
-        if char ~= "" then
-          result = result .. char
-          col = col + 1
-        else
-          result = result .. "\n"
-          row, col = row + 1, 0
+      if parent_tag == "pre" then
+        local row, col = c_row_end, c_col_end
+        while row ~= s_row_start or col ~= s_col_start do
+          local char = self:get_text_range(row, col, row, col + 1)
+          if char ~= "" then
+            result = result .. char
+            col = col + 1
+          else
+            result = result .. "\n"
+            row, col = row + 1, 0
+          end
         end
+      else
+        local is_inline = is_inline_tag(tag_name) or not tag_name -- is text
+        if is_inline and c_col_end ~= s_col_start then result = result .. " " end
       end
     end
 
@@ -363,6 +382,8 @@ M.html_to_md = function(html)
         end
       end
     end)
+
+    self.result = self.result:gsub("\n\n\n+", "\n\n")
 
     return self.result
   end

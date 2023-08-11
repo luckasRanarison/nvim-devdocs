@@ -8,11 +8,11 @@ local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
 local plugin_config = require("nvim-devdocs.config").get()
 
+local registery_path = path:new(plugin_config.dir_path, "registery.json")
+
 M.fetch_registery = function() operations.fetch() end
 
 M.install_doc = function(args)
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
-
   if registery_path:exists() then
     if vim.tbl_isempty(args.fargs) then pickers.installation_picker() end
 
@@ -61,9 +61,9 @@ M.open_doc_float = function(args)
 end
 
 M.update = function(args)
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
-
   if registery_path:exists() then
+    if vim.tbl_isempty(args.fargs) then pickers.update_picker() end
+
     operations.install_args(args.fargs, true, true)
   else
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
@@ -71,8 +71,6 @@ M.update = function(args)
 end
 
 M.update_all = function()
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
-
   if registery_path:exists() then
     local updatable = list.get_updatable()
 

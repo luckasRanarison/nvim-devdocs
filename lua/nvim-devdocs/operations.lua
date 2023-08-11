@@ -3,6 +3,7 @@ local M = {}
 local curl = require("plenary.curl")
 local path = require("plenary.path")
 
+local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
 local transpiler = require("nvim-devdocs.transpiler")
 local plugin_config = require("nvim-devdocs.config").get()
@@ -83,24 +84,29 @@ end
 M.install_args = function(args, verbose, is_update)
   if not registery_path:exists() then return end
 
+  local updatable = list.get_updatable()
   local content = registery_path:read()
   local parsed = vim.fn.json_decode(content)
 
   for _, arg in ipairs(args) do
-    local slug = arg:gsub("-", "~")
-    local data = {}
-
-    for _, entry in ipairs(parsed) do
-      if entry.slug == slug then
-        data = entry
-        break
-      end
-    end
-
-    if vim.tbl_isempty(data) then
-      notify.log_err("No documentation available for " .. arg)
+    if is_update and not vim.tbl_contains(updatable, arg) then
+      notify.log(arg .. " documentation is already up to date")
     else
-      M.install(data, verbose, is_update)
+      local slug = arg:gsub("-", "~")
+      local data = {}
+
+      for _, entry in ipairs(parsed) do
+        if entry.slug == slug then
+          data = entry
+          break
+        end
+      end
+
+      if vim.tbl_isempty(data) then
+        notify.log_err("No documentation available for " .. arg)
+      else
+        M.install(data, verbose, is_update)
+      end
     end
   end
 end

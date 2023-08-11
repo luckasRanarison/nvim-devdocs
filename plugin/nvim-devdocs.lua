@@ -18,7 +18,7 @@ M.setup = function(opts)
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
-  cmd("DevdocsUpdate", M.update, { nargs = "+", complete = completion.get_updatable })
+  cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
 end
 

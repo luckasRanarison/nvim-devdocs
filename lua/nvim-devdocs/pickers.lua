@@ -77,6 +77,22 @@ M.uninstallation_picker = function()
   picker:find()
 end
 
+M.update_picker = function()
+  local installed = list.get_updatable()
+  local picker = new_docs_picker("Update documentation", installed, metadata_priewer, function()
+    actions.select_default:replace(function(prompt_bufnr)
+      local selection = action_state.get_selected_entry()
+      local alias = selection.value.slug:gsub("~", "-")
+
+      actions.close(prompt_bufnr)
+      operations.install(alias, true, true)
+    end)
+    return true
+  end)
+
+  picker:find()
+end
+
 M.open_doc_entry_picker = function(entries, float)
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",

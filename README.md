@@ -22,6 +22,22 @@ return {
 }
 ```
 
+Packer:
+
+```lua
+use {
+  "luckasRanarison/nvim-devdocs",
+  requires = {
+    "nvim-lua/plenary.nvim",
+    "nvim-telescope/telescope.nvim",
+    "nvim-treesitter/nvim-treesitter",
+  },
+  config = function()
+    require("nvim-devdocs").setup()
+  end
+}
+```
+
 The plugin uses treesitter API for converting HTML to markdown so make sure you have treesitter `html` parser installed.
 
 Inside your treesitter configuration:
@@ -40,7 +56,11 @@ Here is the default configuration:
 {
   dir_path = vim.fn.stdpath("data") .. "/devdocs", -- installation directory
   telescope = {}, -- passed to the telescope picker
-  telescope_alt = {}, -- when searching globally without preview
+  telescope_alt = { -- when searching globally without preview
+    layout_config = {
+      width = 75,
+    },
+  },
   float_win = { -- passed to nvim_open_win(), see :h api-floatwin
     relative = "editor",
     height = 25,
@@ -72,7 +92,7 @@ Commands support completion.
 - External previewers.
 - More features.
 
-# Contributing
+## Contributing
 
 The HTML converter is still experimental, and not all documentation has been thoroughly tested yet. If you encounter rendering issues, feel free to submit an [issue](https://github.com/luckasRanarison/nvim-devdocs/issues).
 

@@ -89,21 +89,21 @@ M.install_args = function(args, verbose, is_update)
   local parsed = vim.fn.json_decode(content)
 
   for _, arg in ipairs(args) do
-    if is_update and not vim.tbl_contains(updatable, arg) then
-      notify.log(arg .. " documentation is already up to date")
-    else
-      local slug = arg:gsub("-", "~")
-      local data = {}
+    local slug = arg:gsub("-", "~")
+    local data = {}
 
-      for _, entry in ipairs(parsed) do
-        if entry.slug == slug then
-          data = entry
-          break
-        end
+    for _, entry in ipairs(parsed) do
+      if entry.slug == slug then
+        data = entry
+        break
       end
+    end
 
-      if vim.tbl_isempty(data) then
-        notify.log_err("No documentation available for " .. arg)
+    if vim.tbl_isempty(data) then
+      notify.log_err("No documentation available for " .. arg)
+    else
+      if is_update and not vim.tbl_contains(updatable, arg) then
+        notify.log(arg .. " documentation is already up to date")
       else
         M.install(data, verbose, is_update)
       end
@@ -218,6 +218,7 @@ M.open = function(entry, float)
     local win = vim.api.nvim_open_win(buf, true, float_opts)
 
     vim.wo[win].wrap = plugin_config.wrap
+    vim.wo[win].linebreak = plugin_config.wrap
     vim.wo[win].nu = false
     vim.wo[win].relativenumber = false
   end

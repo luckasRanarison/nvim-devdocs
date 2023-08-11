@@ -81,6 +81,8 @@ M.install = function(entry, verbose, is_update)
 end
 
 M.install_args = function(args, verbose, is_update)
+  if not registery_path:exists() then return end
+
   local content = registery_path:read()
   local parsed = vim.fn.json_decode(content)
 

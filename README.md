@@ -87,6 +87,7 @@ Available commands:
 - `DevdocsUninstall`: Uninstall documentation, 0-n args.
 - `DevdocsOpen`: Open documentation in a normal buffer, 0 or 1 arg.
 - `DevdocsOpenFloat`: Open documentation in a floating window, 0 or 1 arg.
+- `DevdocsOpenCurrentFile`: Open documentation for current filetype.
 - `DevdocsUpdate`: Update documentation, 0-n args.
 - `DevdocsUpdateAll`: Update all documentations.
 

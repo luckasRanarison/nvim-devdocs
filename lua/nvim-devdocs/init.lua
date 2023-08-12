@@ -6,6 +6,8 @@ local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
 local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
+local config = require("nvim-devdocs.config")
+local completion = require("nvim-devdocs.completion")
 local plugin_config = require("nvim-devdocs.config").get()
 
 local registery_path = path:new(plugin_config.dir_path, "registery.json")
@@ -82,6 +84,24 @@ M.update_all = function()
   else
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
   end
+end
+
+M.setup = function(opts)
+  config.setup(opts)
+
+  local ensure_installed = config.get().ensure_installed
+
+  vim.defer_fn(function() operations.install_args(ensure_installed) end, 5000)
+
+  local cmd = vim.api.nvim_create_user_command
+
+  cmd("DevdocsFetch", M.fetch_registery, {})
+  cmd("DevdocsInstall", M.install_doc, { nargs = "*", complete = completion.get_non_installed })
+  cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
+  cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
+  cmd("DevdocsUpdateAll", M.update_all, {})
 end
 
 return M

@@ -1,10 +1,14 @@
 # nvim-devdocs
 
-nvim-devdocs is a plugin which brings [DevDocs](https://devdocs.io) documentations into neovim. Install, search and preview documentations directly inside neovim in markdown format with telescope integration.
+nvim-devdocs is a plugin which brings [DevDocs](https://devdocs.io) documentations into neovim. Install, search and preview documentations directly inside neovim in markdown format with telescope integration. You can also use custom commands like [glow](https://github.com/charmbracelet/glow) to render the markdown for a better experience.
 
 ## Preview
 
 ![nvim-devdocs search](./.github/preview.png)
+
+Using [glow](https://github.com/charmbracelet/glow) for rendering markdown:
+
+![nvim-devdocs with glow](./.github/preview-glow.png)
 
 ## Installation
 

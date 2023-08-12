@@ -16,9 +16,11 @@ M.fetch_registery = function() operations.fetch() end
 
 M.install_doc = function(args)
   if registery_path:exists() then
-    if vim.tbl_isempty(args.fargs) then pickers.installation_picker() end
-
-    operations.install_args(args.fargs, true)
+    if vim.tbl_isempty(args.fargs) then
+      pickers.installation_picker()
+    else
+      operations.install_args(args.fargs, true)
+    end
   else
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
   end
@@ -64,9 +66,11 @@ end
 
 M.update = function(args)
   if registery_path:exists() then
-    if vim.tbl_isempty(args.fargs) then pickers.update_picker() end
-
-    operations.install_args(args.fargs, true, true)
+    if vim.tbl_isempty(args.fargs) then
+      pickers.update_picker()
+    else
+      operations.install_args(args.fargs, true, true)
+    end
   else
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
   end

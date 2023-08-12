@@ -46,7 +46,14 @@ local metadata_priewer = previewers.new_buffer_previewer({
 })
 
 M.installation_picker = function()
-  local content = path:new(plugin_config.dir_path, "registery.json"):read()
+  local registery_path = path:new(plugin_config.dir_path, "registery.json")
+
+  if not registery_path:exists() then
+    notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
+    return
+  end
+
+  local content = registery_path:read()
   local parsed = vim.fn.json_decode(content)
   local picker = new_docs_picker("Install documentation", parsed, metadata_priewer, function()
     actions.select_default:replace(function(prompt_bufnr)
@@ -93,7 +100,14 @@ M.update_picker = function()
   picker:find()
 end
 
-M.open_doc_entry_picker = function(entries, float)
+M.open_picker = function(alias, float)
+  local entries = operations.get_entries(alias)
+
+  if not entries then
+    notify.log_err(alias .. " documentation is not installed")
+    return
+  end
+
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({

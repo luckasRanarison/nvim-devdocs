@@ -35,6 +35,11 @@ M.fetch = function()
 end
 
 M.install = function(entry, verbose, is_update)
+  if not registery_path:exists() then
+    if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
+    return
+  end
+
   local alias = entry.slug:gsub("~", "-")
   local doc_path = path:new(docs_dir, alias .. ".json")
 
@@ -82,7 +87,10 @@ M.install = function(entry, verbose, is_update)
 end
 
 M.install_args = function(args, verbose, is_update)
-  if not registery_path:exists() then return end
+  if not registery_path:exists() then
+    if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
+    return
+  end
 
   local updatable = list.get_updatable()
   local content = registery_path:read()

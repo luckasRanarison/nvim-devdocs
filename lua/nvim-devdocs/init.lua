@@ -49,7 +49,6 @@ M.aliases = {
   ["js"] = "javascript",
   ["jsx"] = "javascript",
   ["md"] = "markdown",
-  ["php"] = "php",
   ["py"] = "python",
   ["rb"] = "ruby",
   ["rs"] = "rust",
@@ -64,6 +63,11 @@ M.open_doc_current_file = function()
   local filetype = vim.bo.filetype
   local alias = M.aliases[filetype] or filetype
   pickers.open_picker(alias, false)
+end
+M.open_doc_current_file_float = function()
+  local filetype = vim.bo.filetype
+  local alias = M.aliases[filetype] or filetype
+  pickers.open_picker(alias, true)
 end
 M.update = function(args)
   if vim.tbl_isempty(args.fargs) then
@@ -97,6 +101,7 @@ M.setup = function(opts)
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsOpenCurrentFileFloat", M.open_doc_current_file_float, {})
   cmd("DevdocsOpenCurrentFile", M.open_doc_current_file, {})
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})

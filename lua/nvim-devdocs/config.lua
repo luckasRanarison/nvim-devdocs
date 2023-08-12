@@ -14,6 +14,8 @@ local config = {
     width = 100,
     border = "rounded",
   },
+  previewer_cmd = nil,
+  cmd_args = {},
   wrap = false,
   ensure_installed = {},
 }

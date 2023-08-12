@@ -1,5 +1,6 @@
 local M = {}
 
+local job = require("plenary.job")
 local curl = require("plenary.curl")
 local path = require("plenary.path")
 
@@ -208,7 +209,6 @@ M.open = function(entry, float)
   local lines = vim.split(markdown, "\n")
   local buf = vim.api.nvim_create_buf(not float, true)
 
-  vim.bo[buf].ft = "markdown"
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
 
@@ -229,6 +229,27 @@ M.open = function(entry, float)
     vim.wo[win].linebreak = plugin_config.wrap
     vim.wo[win].nu = false
     vim.wo[win].relativenumber = false
+  end
+
+  if plugin_config.previewer_cmd then
+    local chan = vim.api.nvim_open_term(buf, {})
+    local echo = job:new({ command = "echo", args = { markdown } })
+
+    local previewer = job:new({
+      command = plugin_config.previewer_cmd,
+      args = plugin_config.cmd_args,
+      on_stdout = vim.schedule_wrap(function(_, data)
+        local output_lines = vim.split(data, "\n", {})
+        for _, line in ipairs(output_lines) do
+          vim.api.nvim_chan_send(chan, line .. "\r\n")
+        end
+      end),
+      writer = echo,
+    })
+
+    previewer:start()
+  else
+    vim.bo[buf].ft = "markdown"
   end
 end
 

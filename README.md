@@ -67,6 +67,8 @@ Here is the default configuration:
     width = 100,
     border = "rounded",
   },
+  previewer_cmd = nil, -- like glow
+  cmd_args = {}, -- example using glow { "-s", "dark", "-w", "80" }
   wrap = false, -- text wrap, only applies to floating window
   ensure_installed = {}, -- get automatically installed
 }

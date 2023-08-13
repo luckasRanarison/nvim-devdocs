@@ -78,6 +78,10 @@ Here is the default configuration:
 }
 ```
 
+## Usage
+
+To use the documentations from nvim-devdocs you have to **install** the documentation using `:DevdocsInstall`.
+
 ## Commands
 
 Available commands:
@@ -107,6 +111,10 @@ Commands support completion, and the Telescope picker will be used when no argum
 The HTML converter is still experimental, and not all documentation has been thoroughly tested yet. If you encounter rendering issues, feel free to submit an [issue](https://github.com/luckasRanarison/nvim-devdocs/issues).
 
 Pull requests and feature requests are welcome!
+
+## Similar projects
+
+- [nvim-telescope-zeal-cli](https://gitlab.com/ivan-cukic/nvim-telescope-zeal-cli) Show Zeal documentation pages in Neovim Telescope.
 
 ## Credits
 

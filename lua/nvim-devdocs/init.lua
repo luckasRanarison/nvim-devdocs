@@ -44,10 +44,9 @@ M.open_doc_float = function(args)
   end
 end
 
-M.open_doc_current_file = function(args)
+M.open_doc_current_file = function(float)
   local filetype = vim.bo.filetype
   local alias = filetypes[filetype] or filetype
-  local float = args.fargs[1] == "float"
   pickers.open_picker(alias, float)
 end
 
@@ -83,7 +82,8 @@ M.setup = function(opts)
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
-  cmd("DevdocsOpenCurrentFile", M.open_doc_current_file, { nargs = "?" })
+  cmd("DevdocsOpenCurrent", function() M.open_doc_current_file() end, {})
+  cmd("DevdocsOpenCurrentFloat", function() M.open_doc_current_file(true) end, {})
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
 end

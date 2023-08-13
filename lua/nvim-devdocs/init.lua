@@ -6,6 +6,7 @@ local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
 local config = require("nvim-devdocs.config")
 local completion = require("nvim-devdocs.completion")
+local filetypes = require("nvim-devdocs.filetypes")
 
 M.fetch_registery = function() operations.fetch() end
 
@@ -43,27 +44,13 @@ M.open_doc_float = function(args)
   end
 end
 
-M.aliases = {
-  ["cs"] = "csharp",
-  ["go"] = "go",
-  ["js"] = "javascript",
-  ["jsx"] = "javascript",
-  ["md"] = "markdown",
-  ["py"] = "python",
-  ["rb"] = "ruby",
-  ["rs"] = "rust",
-  ["sass"] = "sass",
-  ["scss"] = "sass",
-  ["sh"] = "bash",
-  ["ts"] = "typescript",
-  ["tsx"] = "typescript",
-  ["yml"] = "yaml",
-}
-M.open_doc_current_file = function()
+M.open_doc_current_file = function(args)
   local filetype = vim.bo.filetype
-  local alias = M.aliases[filetype] or filetype
-  pickers.open_picker(alias, false)
+  local alias = filetypes[filetype] or filetype
+  local float = args.fargs[1] == "float"
+  pickers.open_picker(alias, float)
 end
+
 M.update = function(args)
   if vim.tbl_isempty(args.fargs) then
     pickers.update_picker()
@@ -95,7 +82,8 @@ M.setup = function(opts)
   cmd("DevdocsInstall", M.install_doc, { nargs = "*", complete = completion.get_non_installed })
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
-  cmd("DevdocsOpenCurrentFile", M.open_doc_current_file, {})
+  cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsOpenCurrentFile", M.open_doc_current_file, { nargs = "?" })
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
 end

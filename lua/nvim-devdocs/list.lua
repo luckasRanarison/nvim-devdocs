@@ -46,6 +46,7 @@ end
 
 M.get_updatable = function()
   if not registery_path:exists() then return {} end
+  if not index_path:exists() then return {} end
 
   local results = {}
   local registery_content = registery_path:read()

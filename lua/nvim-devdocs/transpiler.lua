@@ -144,7 +144,7 @@ M.html_to_md = function(html)
 
     if child then
       local tag_node = child:named_child()
-      tag_name = self:get_node_text(tag_node)
+      if tag_node then tag_name = self:get_node_text(tag_node) end
     end
 
     return tag_name
@@ -291,10 +291,15 @@ M.html_to_md = function(html)
     local children = self:filter_tag_children(node)
     ---@type TSNode[]
     local tr_nodes = {}
+    local first_child_tag = self:get_node_tag_name(children[1])
 
-    -- extracts tr from thead, tbody
-    for _, child in ipairs(children) do
-      vim.list_extend(tr_nodes, self:filter_tag_children(child))
+    if first_child_tag == "tr" then
+      vim.list_extend(tr_nodes, children)
+    else
+      -- extracts tr from thead, tbody
+      for _, child in ipairs(children) do
+        vim.list_extend(tr_nodes, self:filter_tag_children(child))
+      end
     end
 
     local max_col_len_map = {}

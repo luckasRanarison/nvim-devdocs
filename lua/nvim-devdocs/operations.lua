@@ -184,7 +184,7 @@ M.get_entries = function(alias)
 end
 
 M.get_all_entries = function()
-  if not index_path:exists() then return end
+  if not index_path:exists() then return {} end
 
   local entries = {}
   local index_content = index_path:read()
@@ -233,8 +233,6 @@ M.open = function(entry, float)
 
   if plugin_config.previewer_cmd then
     local chan = vim.api.nvim_open_term(buf, {})
-    local echo = job:new({ command = "echo", args = { markdown } })
-
     local previewer = job:new({
       command = plugin_config.previewer_cmd,
       args = plugin_config.cmd_args,
@@ -244,9 +242,8 @@ M.open = function(entry, float)
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
-      writer = echo,
+      writer = markdown,
     })
-
     previewer:start()
   else
     vim.bo[buf].ft = "markdown"

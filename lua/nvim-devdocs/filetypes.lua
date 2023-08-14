@@ -6,6 +6,7 @@ local M = {
   ["ruby"] = "ruby-3.2",
   ["twig"] = "twig-3",
   ["less"] = "less-4",
+  ["python"] = "python-3.11",
   ["javascriptreact"] = "react",
   ["typescriptreact"] = "react",
 }

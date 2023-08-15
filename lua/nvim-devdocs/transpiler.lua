@@ -70,7 +70,7 @@ local tag_mappings = {
   mi = {},
 
   br = { right = "\n" },
-  hr = { right = "---" },
+  hr = { right = "---\n\n" },
 }
 
 local skipable_tag = {
@@ -122,6 +122,8 @@ end
 
 ---@param node TSNode
 function transpiler:get_node_text(node)
+  if not node then return "" end
+
   local row_start, col_start = node:start()
   local row_end, col_end = node:end_()
   local text = self:get_text_range(row_start, col_start, row_end, col_end)
@@ -144,6 +146,8 @@ end
 
 ---@param node TSNode
 function transpiler:get_node_attributes(node)
+  if not node then return {} end
+
   local attributes = {}
   local tag_node = node:named_child()
 
@@ -157,7 +161,7 @@ function transpiler:get_node_attributes(node)
     local attribute_name = self:get_node_text(attribute_name_node)
     local value = ""
 
-    if attribute_name_node:next_named_sibling() then
+    if attribute_name_node and attribute_name_node:next_named_sibling() then
       local quotetd_value_node = attribute_name_node:next_named_sibling()
       local value_node = quotetd_value_node:named_child()
       if value_node then value = self:get_node_text(value_node) end

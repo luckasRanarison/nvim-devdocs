@@ -6,7 +6,6 @@ local path = require("plenary.path")
 
 local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
-local transpiler = require("nvim-devdocs.transpiler")
 local plugin_config = require("nvim-devdocs.config").get()
 local build_docs = require("nvim-devdocs.build")
 
@@ -138,43 +137,18 @@ M.uninstall = function(alias)
   end
 end
 
-M.get_entry = function(alias, entry_path)
-  local file_path = path:new(plugin_config.dir_path, "docs", alias .. ".json")
-
-  if index_path:exists() or not file_path:exists() then
-    local content = file_path:read()
-    local parsed = vim.fn.json_decode(content)
-    local main_path = vim.split(entry_path, "#")[1]
-    local entry = { key = main_path, value = parsed[main_path] }
-
-    return entry
-  end
-end
-
 M.get_entries = function(alias)
-  local file_path = path:new(plugin_config.dir_path, "docs", alias .. ".json")
+  local installed = list.get_installed_alias()
+  local is_installed = vim.tbl_contains(installed, alias)
 
-  if not index_path:exists() or not file_path:exists() then return end
+  if not index_path:exists() or not is_installed then return end
 
-  local entries = {}
-  local index_content = index_path:read()
-  local index_parsed = vim.fn.json_decode(index_content)
-  local docs_content = file_path:read()
-  local docs_decoded = vim.fn.json_decode(docs_content)
+  local index_parsed = vim.fn.json_decode(index_path:read())
+  local entries = index_parsed[alias].entries
 
-  for _, entry in pairs(index_parsed[alias].entries) do
-    local doc = ""
-    local entry_path = vim.split(entry.path, "#")
-    local local_path = entry_path[2] and entry_path[2] or entry_path[1]
-
-    for doc_entry, value in pairs(docs_decoded) do
-      if string.lower(doc_entry) == string.lower(entry_path[1]) then doc = value end
-    end
-
-    table.insert(entries, { name = entry.name, path = local_path, value = doc })
+  for key, _ in ipairs(entries) do
+    entries[key].alias = alias
   end
-
-  table.insert(entries, { name = "index", path = "index", value = docs_decoded["index"] })
 
   return entries
 end
@@ -183,8 +157,7 @@ M.get_all_entries = function()
   if not index_path:exists() then return {} end
 
   local entries = {}
-  local index_content = index_path:read()
-  local index_parsed = vim.fn.json_decode(index_content)
+  local index_parsed = vim.fn.json_decode(index_path:read())
 
   for alias, index in pairs(index_parsed) do
     for _, doc_entry in ipairs(index.entries) do
@@ -200,16 +173,11 @@ M.get_all_entries = function()
   return entries
 end
 
-M.open = function(entry, float)
-  local markdown = transpiler.html_to_md(entry.value)
-  local lines = vim.split(markdown, "\n")
-  local buf = vim.api.nvim_create_buf(not float, true)
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+M.open = function(alias, bufnr, pattern, float)
+  vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
   if not float then
-    vim.api.nvim_set_current_buf(buf)
+    vim.api.nvim_set_current_buf(bufnr)
   else
     local ui = vim.api.nvim_list_uis()[1]
     local row = (ui.height - plugin_config.float_win.height) * 0.5
@@ -219,7 +187,7 @@ M.open = function(entry, float)
     if not plugin_config.row then float_opts.row = row end
     if not plugin_config.col then float_opts.col = col end
 
-    local win = vim.api.nvim_open_win(buf, true, float_opts)
+    local win = vim.api.nvim_open_win(bufnr, true, float_opts)
 
     vim.wo[win].wrap = plugin_config.wrap
     vim.wo[win].linebreak = plugin_config.wrap
@@ -227,8 +195,14 @@ M.open = function(entry, float)
     vim.wo[win].relativenumber = false
   end
 
-  if plugin_config.previewer_cmd then
-    local chan = vim.api.nvim_open_term(buf, {})
+  vim.fn.search(pattern)
+
+  local ignore = vim.tbl_contains(plugin_config.cmd_ignore, alias)
+  if plugin_config.previewer_cmd and not ignore then
+    vim.bo[bufnr].ft = "glow"
+
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local chan = vim.api.nvim_open_term(bufnr, {})
     local previewer = job:new({
       command = plugin_config.previewer_cmd,
       args = plugin_config.cmd_args,
@@ -238,11 +212,18 @@ M.open = function(entry, float)
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
-      writer = markdown,
+      writer = table.concat(lines, "\n"),
     })
     previewer:start()
+
+    if pattern then
+      local formatted_pattern = pattern:gsub("`", "")
+
+      -- TODO: wait for the rendering before jumping
+      vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
+    end
   else
-    vim.bo[buf].ft = "markdown"
+    vim.bo[bufnr].ft = "markdown"
   end
 end
 

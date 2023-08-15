@@ -1,12 +1,10 @@
 local M = {}
 
 local path = require("plenary.path")
-local scandir = require("plenary.scandir")
 
 local notify = require("nvim-devdocs.notify")
 local plugin_config = require("nvim-devdocs.config").get()
 
-local docs_dir = path:new(plugin_config.dir_path, "docs")
 local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
 local registery_path = path:new(plugin_config.dir_path, "registery.json")
 

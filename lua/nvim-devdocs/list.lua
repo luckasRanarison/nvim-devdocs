@@ -7,19 +7,15 @@ local notify = require("nvim-devdocs.notify")
 local plugin_config = require("nvim-devdocs.config").get()
 
 local docs_dir = path:new(plugin_config.dir_path, "docs")
-local index_path = path:new(plugin_config.dir_path, "index.json")
+local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
 local registery_path = path:new(plugin_config.dir_path, "registery.json")
 
 M.get_installed_alias = function()
-  if not docs_dir:exists() then return {} end
+  if not lock_path:exists() then return {} end
 
-  local files = scandir.scan_dir(path.__tostring(docs_dir), { all_dirs = false })
-  local installed = vim.tbl_map(function(file_path)
-    local splited = path._split(path:new(file_path))
-    local filename = splited[#splited]
-    local basename = filename:gsub(".json", "")
-    return basename
-  end, files)
+  local lockfile = lock_path:read()
+  local lock_parsed = vim.fn.json_decode(lockfile)
+  local installed = vim.tbl_keys(lock_parsed)
 
   return installed
 end
@@ -45,20 +41,20 @@ M.get_installed_entry = function()
 end
 
 M.get_updatable = function()
-  if not registery_path:exists() then return {} end
-  if not index_path:exists() then return {} end
+  if not registery_path:exists() or not lock_path:exists() then return {} end
 
   local results = {}
-  local registery_content = registery_path:read()
-  local registery_parsed = vim.fn.json_decode(registery_content)
-  local index_content = index_path:read()
-  local index_parsed = vim.fn.json_decode(index_content)
+  local registery = registery_path:read()
+  local registery_parsed = vim.fn.json_decode(registery)
+  local lockfile = lock_path:read()
+  local lock_parsed = vim.fn.json_decode(lockfile)
 
-  for alias, value in pairs(index_parsed) do
-    local slug = alias:gsub("-", "~")
-
+  for alias, value in pairs(lock_parsed) do
     for _, doc in pairs(registery_parsed) do
-      if doc.slug == slug and doc.mtime > value.mtime then table.insert(results, alias) end
+      if doc.slug == value.slug and doc.mtime > value.mtime then
+        table.insert(results, alias)
+        break
+      end
     end
   end
 

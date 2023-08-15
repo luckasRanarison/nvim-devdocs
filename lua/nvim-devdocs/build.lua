@@ -6,6 +6,9 @@ local html_to_md = require("nvim-devdocs.transpiler").html_to_md
 
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
+
+  notify.log("Building " .. alias .. " documentation...")
+
   local docs_dir = path:new(plugin_config.dir_path, "docs")
   local current_doc_dir = path:new(docs_dir, alias)
   local index_path = path:new(plugin_config.dir_path, "index.json")
@@ -60,7 +63,7 @@ local function build_docs(entry, index, docs)
   lock_parsed[alias] = entry
   lock_path:write(vim.fn.json_encode(lock_parsed), "w")
 
-  notify.log("Build complete! [" .. alias .. "]")
+  notify.log("Build complete!")
 end
 
 return build_docs

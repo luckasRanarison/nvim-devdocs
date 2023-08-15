@@ -60,27 +60,25 @@ Here is the default configuration:
 {
   dir_path = vim.fn.stdpath("data") .. "/devdocs", -- installation directory
   telescope = {}, -- passed to the telescope picker
-  telescope_alt = { -- when searching globally without preview
-    layout_config = {
-      width = 75,
-    },
-  },
   float_win = { -- passed to nvim_open_win(), see :h api-floatwin
     relative = "editor",
     height = 25,
     width = 100,
     border = "rounded",
   },
-  previewer_cmd = nil, -- like glow
-  cmd_args = {}, -- example using glow { "-s", "dark", "-w", "80" }
   wrap = false, -- text wrap, only applies to floating window
+  previewer_cmd = nil, -- for example: "glow"
+  cmd_args = {}, -- example using glow: { "-s", "dark", "-w", "80" }
+  cmd_ignore = {}, -- ignore cmd rendering for the listed docs
+  picker_cmd = false, -- use cmd previewer in picker preview
+  picker_cmd_args = {}, -- example using glow: { "-p" }
   ensure_installed = {}, -- get automatically installed
 }
 ```
 
 ## Usage
 
-To use the documentations from nvim-devdocs you have to **install** the documentation using `:DevdocsInstall`.
+To use the documentations from nvim-devdocs, you need to install it by executing `:DevdocsInstall`. The documentation is indexed and built during the download. Since the building process is done synchronously and may block input, you may want to download larger documents (more than 10MB) in headless mode: `nvim --headless +"DevdocsInstall rust"`.
 
 ## Commands
 
@@ -97,10 +95,6 @@ Available commands:
 - `DevdocsUpdateAll`: Update all documentations.
 
 Commands support completion, and the Telescope picker will be used when no argument is provided.
-
-> ℹ️ **NOTE**:<br>
-> At the moment, Telescope's Previewer is available only when opening a specific documentation.
-> E.g. `:DevdocsOpen javascript`
 
 ## TODO
 

@@ -6,6 +6,7 @@ local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
 local config = require("nvim-devdocs.config")
 local completion = require("nvim-devdocs.completion")
+local filetypes = require("nvim-devdocs.filetypes")
 
 M.fetch_registery = function() operations.fetch() end
 
@@ -43,6 +44,12 @@ M.open_doc_float = function(args)
   end
 end
 
+M.open_doc_current_file = function(float)
+  local filetype = vim.bo.filetype
+  local alias = filetypes[filetype] or filetype
+  pickers.open_picker(alias, float)
+end
+
 M.update = function(args)
   if vim.tbl_isempty(args.fargs) then
     pickers.update_picker()
@@ -75,6 +82,8 @@ M.setup = function(opts)
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsOpenCurrent", function() M.open_doc_current_file() end, {})
+  cmd("DevdocsOpenCurrentFloat", function() M.open_doc_current_file(true) end, {})
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
 end

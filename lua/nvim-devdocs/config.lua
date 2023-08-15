@@ -13,7 +13,7 @@ local config = {
   previewer_cmd = nil,
   cmd_args = {},
   cmd_ignore = {},
-  picker_cmd = nil,
+  picker_cmd = false,
   picker_cmd_args = {},
   ensure_installed = {},
 }

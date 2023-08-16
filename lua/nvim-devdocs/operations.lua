@@ -20,6 +20,9 @@ M.fetch = function()
   notify.log("Fetching DevDocs registery...")
 
   curl.get(devdocs_site_url .. "/docs.json", {
+    headers = {
+      ["User-agent"] = "chrome",
+    },
     callback = function(response)
       local dir_path = path:new(plugin_config.dir_path)
       local file_path = path:new(plugin_config.dir_path, "registery.json")

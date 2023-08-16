@@ -177,7 +177,7 @@ M.open_picker = function(alias, float)
 
   local previewer = buf_doc_previewer
 
-  if plugin_config.previewer_cmd and plugin_config.previewer_cmd then
+  if plugin_config.previewer_cmd and plugin_config.picker_cmd then
     previewer = term_doc_previewer
   end
 
@@ -211,7 +211,7 @@ M.global_search_picker = function(float)
   local entries = operations.get_all_entries()
   local previewer = buf_doc_previewer
 
-  if plugin_config.previewer_cmd and plugin_config.previewer_cmd then
+  if plugin_config.previewer_cmd and plugin_config.picker_cmd then
     previewer = term_doc_previewer
   end
 

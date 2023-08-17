@@ -52,6 +52,16 @@ M.install = function(entry, verbose, is_update)
   if not is_update and is_installed then
     if verbose then notify.log("Documentation for " .. alias .. " is already installed") end
   else
+    local ui = vim.api.nvim_list_uis()
+
+    if ui[1] and entry.db_size > 10000000 then
+      local input = vim.fn.input({
+        prompt = "Building large docs can freeze neovim, continue? y/n ",
+      })
+
+      if input ~= "y" then return end
+    end
+
     local callback = function(index)
       local doc_url = string.format("%s/%s/db.json?%s", devdocs_cdn_url, entry.slug, entry.mtime)
 

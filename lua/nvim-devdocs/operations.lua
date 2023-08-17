@@ -215,16 +215,15 @@ M.open = function(alias, bufnr, pattern, float)
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
+      on_exit = vim.schedule_wrap(function()
+        if pattern then
+          local formatted_pattern = pattern:gsub("`", "")
+          vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
+        end
+      end),
       writer = table.concat(lines, "\n"),
     })
     previewer:start()
-
-    if pattern then
-      local formatted_pattern = pattern:gsub("`", "")
-
-      -- TODO: wait for the rendering before jumping
-      vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
-    end
   else
     vim.bo[bufnr].ft = "markdown"
   end

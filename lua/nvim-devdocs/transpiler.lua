@@ -335,8 +335,11 @@ function transpiler:eval_table(node)
   for i = 1, #tr_nodes do
     local current_col = 1
     for j, value in ipairs(result_map[i]) do
-      local col_len = max_col_len_map[current_col]
       local colspan = tonumber(colspan_map[i][j])
+      local col_len = max_col_len_map[current_col]
+
+      if not col_len then break end
+
       result = result .. "| " .. value .. string.rep(" ", col_len - #value + 1)
       current_col = current_col + 1
 
@@ -356,8 +359,11 @@ function transpiler:eval_table(node)
     if i == 1 then
       current_col = 1
       for j = 1, #result_map[i] do
-        local col_len = max_col_len_map[current_col]
         local colspan = tonumber(colspan_map[i][j])
+        local col_len = max_col_len_map[current_col]
+
+        if not col_len then break end
+
         local line = string.rep("-", col_len)
         current_col = current_col + 1
 

@@ -73,6 +73,7 @@ Here is the default configuration:
   picker_cmd = false, -- use cmd previewer in picker preview
   picker_cmd_args = {}, -- example using glow: { "-p" }
   ensure_installed = {}, -- get automatically installed
+  after_open = function(bufnr) end, -- callback that runs after the Devdocs window is opened. Devdocs buffer ID will be passed in
 }
 ```
 
@@ -95,6 +96,19 @@ Available commands:
 - `DevdocsUpdateAll`: Update all documentations.
 
 Commands support completion, and the Telescope picker will be used when no argument is provided.
+
+## Lifecycle Hook
+
+An `after_open` callback is supplied which accepts the buffer ID of the Devdocs window. It can be used for things like buffer-specific keymaps:
+
+```lua
+require('nvim-devdocs').setup({
+  -- ...
+  after_open = function(bufnr)
+    vim.api.nvim_buf_set_keymap(bufnr, 'n', '<Esc>', ':close<CR>', {})
+  end
+})
+```
 
 ## TODO
 

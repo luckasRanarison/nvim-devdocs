@@ -237,6 +237,8 @@ M.open = function(alias, bufnr, pattern, float)
   else
     vim.bo[bufnr].ft = "markdown"
   end
+
+  plugin_config.after_open(bufnr)
 end
 
 return M

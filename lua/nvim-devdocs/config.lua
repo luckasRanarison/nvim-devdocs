@@ -16,7 +16,10 @@ local config = {
   picker_cmd = false,
   picker_cmd_args = {},
   ensure_installed = {},
-  after_open = function() end
+  mappings = {
+    open_in_browser = "",
+  },
+  after_open = function() end,
 }
 
 M.get = function() return config end

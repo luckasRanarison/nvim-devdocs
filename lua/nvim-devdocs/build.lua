@@ -52,6 +52,7 @@ local function build_docs(entry, index, docs)
 
   for i, index_entry in ipairs(index.entries) do
     local main = vim.split(index_entry.path, "#")[1]
+    index.entries[i].link = index.entries[i].path
     index.entries[i].path = path_map[index_entry.path] or path_map[main]
   end
 

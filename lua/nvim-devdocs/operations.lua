@@ -178,6 +178,7 @@ M.get_all_entries = function()
         name = string.format("[%s] %s", alias, doc_entry.name),
         alias = alias,
         path = doc_entry.path,
+        link = doc_entry.link,
       }
       table.insert(entries, entry)
     end
@@ -186,7 +187,7 @@ M.get_all_entries = function()
   return entries
 end
 
-M.open = function(alias, bufnr, pattern, float)
+M.open = function(entry, bufnr, pattern, float)
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
   if not float then
@@ -210,7 +211,7 @@ M.open = function(alias, bufnr, pattern, float)
 
   vim.fn.search(pattern)
 
-  local ignore = vim.tbl_contains(plugin_config.cmd_ignore, alias)
+  local ignore = vim.tbl_contains(plugin_config.cmd_ignore, entry.alias)
   if plugin_config.previewer_cmd and not ignore then
     vim.bo[bufnr].ft = "glow"
 
@@ -237,6 +238,18 @@ M.open = function(alias, bufnr, pattern, float)
   else
     vim.bo[bufnr].ft = "markdown"
   end
+
+  local slug = entry.alias:gsub("-", "~")
+  local keymaps = plugin_config.mappings
+  local set_buf_keymap = function(key, action, description)
+    vim.keymap.set("n", key, action, { buffer = bufnr, desc = description })
+  end
+
+  set_buf_keymap(
+    keymaps.open_in_browser,
+    function() vim.ui.open("https://devdocs.io/" .. slug .. "/" .. entry.link) end,
+    "Open in the browser"
+  )
 
   plugin_config.after_open(bufnr)
 end

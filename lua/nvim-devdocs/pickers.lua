@@ -104,7 +104,7 @@ local open_doc = function(float)
 
   local splited_path = vim.split(selection.value.path, ",")
 
-  operations.open(selection.value.alias, bufnr, splited_path[2], float)
+  operations.open(selection.value, bufnr, splited_path[2], float)
 end
 
 M.installation_picker = function()

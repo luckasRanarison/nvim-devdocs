@@ -72,6 +72,9 @@ Here is the default configuration:
   cmd_ignore = {}, -- ignore cmd rendering for the listed docs
   picker_cmd = false, -- use cmd previewer in picker preview
   picker_cmd_args = {}, -- example using glow: { "-p" }
+  mappings = { -- keymaps for the doc buffer
+    open_in_browser = ""
+  }
   ensure_installed = {}, -- get automatically installed
   after_open = function(bufnr) end, -- callback that runs after the Devdocs window is opened. Devdocs buffer ID will be passed in
 }

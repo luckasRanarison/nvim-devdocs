@@ -245,11 +245,13 @@ M.open = function(entry, bufnr, pattern, float)
     vim.keymap.set("n", key, action, { buffer = bufnr, desc = description })
   end
 
-  set_buf_keymap(
-    keymaps.open_in_browser,
-    function() vim.ui.open("https://devdocs.io/" .. slug .. "/" .. entry.link) end,
-    "Open in the browser"
-  )
+  if type(keymaps.open_in_browser) == "string" and keymaps.open_in_browser ~= "" then
+    set_buf_keymap(
+      keymaps.open_in_browser,
+      function() vim.ui.open("https://devdocs.io/" .. slug .. "/" .. entry.link) end,
+      "Open in the browser"
+    )
+  end
 
   plugin_config.after_open(bufnr)
 end

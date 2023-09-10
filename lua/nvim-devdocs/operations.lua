@@ -216,23 +216,61 @@ M.open = function(entry, bufnr, pattern, float)
     vim.bo[bufnr].ft = "glow"
 
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    -- if we have a pattern to search for, and a previewer command,
+    -- split at the pattern and invoke the command twice: once with
+    -- all the lines before the pattern, once with the lines after.
+    -- Then we count the output lines for before,
+    -- that way we know exactly where to scroll to center the pattern
+    -- after the generation (the issue is that with a previewer command,
+    -- the generated output may not match the pattern anymore)
+    local lines_before = {}
+    local lines_after = {}
+    local found = pattern == nil
+    local escaped_pattern = escape_pattern(pattern)
+    for _, line in ipairs(lines) do
+      found = found or string.match(line, escaped_pattern)
+      if found then
+        table.insert(lines_after, line)
+      else
+        table.insert(lines_before, line)
+      end
+    end
     local chan = vim.api.nvim_open_term(bufnr, {})
+    local lines_count_before = 1
     local previewer = job:new({
       command = plugin_config.previewer_cmd,
       args = plugin_config.cmd_args,
       on_stdout = vim.schedule_wrap(function(_, data)
         local output_lines = vim.split(data, "\n", {})
+        lines_count_before = lines_count_before + #output_lines
         for _, line in ipairs(output_lines) do
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
       on_exit = vim.schedule_wrap(function()
         if pattern then
-          local formatted_pattern = pattern:gsub("`", "")
-          vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
+          local previewer_after = job:new({
+            command = plugin_config.previewer_cmd,
+            args = plugin_config.cmd_args,
+            on_stdout = vim.schedule_wrap(function(_, data)
+              local output_lines = vim.split(data, "\n", {})
+              for _, line in ipairs(output_lines) do
+                vim.api.nvim_chan_send(chan, line .. "\r\n")
+              end
+            end),
+            on_exit = vim.schedule_wrap(function()
+              if pattern then
+                vim.defer_fn(function()
+                  vim.api.nvim_command('normal! ' .. lines_count_before .. 'zt')
+                end, 500)
+              end
+            end),
+            writer = table.concat(lines_after, "\n"),
+          })
+          previewer_after:start()
         end
       end),
-      writer = table.concat(lines, "\n"),
+      writer = table.concat(lines_before, "\n"),
     })
     previewer:start()
   else
@@ -254,6 +292,14 @@ M.open = function(entry, bufnr, pattern, float)
   end
 
   plugin_config.after_open(bufnr)
+end
+
+-- https://stackoverflow.com/a/34953646/516188
+function escape_pattern(text)
+  if text == nil then
+    return nil
+  end
+  return text:gsub("([^%w])", "%%%1")
 end
 
 return M

@@ -211,6 +211,8 @@ function transpiler:eval(node)
 
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
+    elseif tag_name == "img" and string.match(attributes.src, "^data:") then
+      result = string.format("![%s](%s)", attributes.alt, "data:inline_image")
     elseif tag_name == "img" then
       result = string.format("![%s](%s)", attributes.alt, attributes.src)
     elseif tag_name == "pre" and attributes["data-language"] then

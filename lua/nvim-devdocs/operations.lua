@@ -216,6 +216,16 @@ M.open = function(entry, bufnr, pattern, float)
     vim.bo[bufnr].ft = "glow"
 
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    -- if we have a pattern to search for, only consider lines after the pattern
+    local filtered_lines = {}
+    local found = pattern == nil
+    local escaped_pattern = escape_pattern(pattern)
+    for _, line in ipairs(lines) do
+      found = found or string.match(line, escaped_pattern)
+      if found then
+        table.insert(filtered_lines, line)
+      end
+    end
     local chan = vim.api.nvim_open_term(bufnr, {})
     local previewer = job:new({
       command = plugin_config.previewer_cmd,
@@ -226,13 +236,7 @@ M.open = function(entry, bufnr, pattern, float)
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
-      on_exit = vim.schedule_wrap(function()
-        if pattern then
-          local formatted_pattern = pattern:gsub("`", "")
-          vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
-        end
-      end),
-      writer = table.concat(lines, "\n"),
+      writer = table.concat(filtered_lines, "\n"),
     })
     previewer:start()
   else
@@ -254,6 +258,14 @@ M.open = function(entry, bufnr, pattern, float)
   end
 
   plugin_config.after_open(bufnr)
+end
+
+-- https://stackoverflow.com/a/34953646/516188
+function escape_pattern(text)
+  if text == nil then
+    return nil
+  end
+  return text:gsub("([^%w])", "%%%1")
 end
 
 return M

@@ -342,7 +342,7 @@ function transpiler:eval_table(node)
 
       if not col_len then break end
 
-      result = result .. "| " .. value .. string.rep(" ", col_len - #value + 1)
+      result = result .. "| " .. string.gsub(value, "\n", "") .. string.gsub(string.rep(" ", col_len - #value + 1), "\n", "")
       current_col = current_col + 1
 
       if colspan > 1 then
@@ -377,7 +377,7 @@ function transpiler:eval_table(node)
             current_col = current_col + 1
           end
         end
-        result = result .. "| " .. line .. " "
+        result = result .. "| " .. string.gsub(line, "\n", "") .. " "
       end
 
       result = result .. "|\n"

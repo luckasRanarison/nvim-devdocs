@@ -187,6 +187,9 @@ M.get_all_entries = function()
   return entries
 end
 
+-- https://stackoverflow.com/a/34953646/516188
+local function create_pattern(text) return text:gsub("([^%w])", "%%%1") end
+
 M.open = function(entry, bufnr, pattern, float)
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
@@ -217,15 +220,28 @@ M.open = function(entry, bufnr, pattern, float)
 
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     -- if we have a pattern to search for, only consider lines after the pattern
-    local filtered_lines = {}
-    local found = pattern == nil
-    local escaped_pattern = escape_pattern(pattern)
-    for _, line in ipairs(lines) do
-      found = found or string.match(line, escaped_pattern)
-      if found then
-        table.insert(filtered_lines, line)
+    local filtered_lines = nil
+    local found = false
+
+    if pattern then
+      filtered_lines = {}
+
+      local search_pattern = create_pattern(pattern)
+      local split = vim.split(pattern, " ")
+      local header = split[1]
+      local top_header = header and header:sub(1, #header - 1)
+
+      for _, line in ipairs(lines) do
+        if found and header then
+          local line_split = vim.split(line, " ")
+          local first = line_split[1]
+          if first and first == header or first == top_header then break end
+        end
+        if line:match(search_pattern) then found = true end
+        if found then table.insert(filtered_lines, line) end
       end
     end
+
     local chan = vim.api.nvim_open_term(bufnr, {})
     local previewer = job:new({
       command = plugin_config.previewer_cmd,
@@ -236,7 +252,7 @@ M.open = function(entry, bufnr, pattern, float)
           vim.api.nvim_chan_send(chan, line .. "\r\n")
         end
       end),
-      writer = table.concat(filtered_lines, "\n"),
+      writer = table.concat(filtered_lines or lines, "\n"),
     })
     previewer:start()
   else
@@ -258,14 +274,6 @@ M.open = function(entry, bufnr, pattern, float)
   end
 
   plugin_config.after_open(bufnr)
-end
-
--- https://stackoverflow.com/a/34953646/516188
-function escape_pattern(text)
-  if text == nil then
-    return nil
-  end
-  return text:gsub("([^%w])", "%%%1")
 end
 
 return M

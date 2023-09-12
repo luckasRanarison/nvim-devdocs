@@ -54,6 +54,8 @@ local buf_doc_previewer = previewers.new_buffer_previewer({
     local file = splited_path[1]
     local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
     local bufnr = self.state.bufnr
+    local splited_path = vim.split(entry.value.path, ",")
+    local pattern = splited_path[2]
 
     local display_lines = function(lines)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
@@ -67,7 +69,8 @@ local buf_doc_previewer = previewers.new_buffer_previewer({
 
     file_path:_read_async(vim.schedule_wrap(function(content)
       local lines = vim.split(content, "\n")
-      display_lines(lines)
+      local filtered_lines = operations.filter_doc(lines, pattern)
+      display_lines(filtered_lines)
     end))
   end,
 })
@@ -78,10 +81,9 @@ local term_doc_previewer = previewers.new_termopen_previewer({
     local splited_path = vim.split(entry.value.path, ",")
     local file = splited_path[1]
     local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
-    local args = { plugin_config.previewer_cmd }
-
-    vim.list_extend(args, plugin_config.picker_cmd_args)
-    table.insert(args, path.__tostring(file_path))
+    local lines = file_path:readlines()
+    local filtered_lines = operations.filter_doc(lines, splited_path[2])
+    local args = {} -- TODO
 
     return args
   end,
@@ -96,8 +98,9 @@ local open_doc = function(float)
     local splited_path = vim.split(selection.value.path, ",")
     local file = splited_path[1]
     local file_path = path:new(plugin_config.dir_path, "docs", selection.value.alias, file .. ".md")
-    local content = file_path:read()
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(content, "\n"))
+    local lines = file_path:readlines()
+    local filtered_lines = operations.filter_doc(lines, splited_path[2])
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
   else
     bufnr = state.get_global_key("last_preview_bufnr")
   end

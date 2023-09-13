@@ -187,7 +187,55 @@ M.get_all_entries = function()
   return entries
 end
 
-M.open = function(entry, bufnr, pattern, float)
+M.filter_doc = function(lines, pattern)
+  if not pattern then return lines end
+
+  -- https://stackoverflow.com/a/34953646/516188
+  local function create_pattern(text) return text:gsub("([^%w])", "%%%1") end
+
+  local filtered_lines = {}
+  local found = false
+  local search_pattern = create_pattern(pattern)
+  local split = vim.split(pattern, " ")
+  local header = split[1]
+  local top_header = header and header:sub(1, #header - 1)
+
+  for _, line in ipairs(lines) do
+    if found and header then
+      local line_split = vim.split(line, " ")
+      local first = line_split[1]
+      if first and first == header or first == top_header then break end
+    end
+    if line:match(search_pattern) then found = true end
+    if found then table.insert(filtered_lines, line) end
+  end
+
+  return filtered_lines
+end
+
+M.render_cmd = function(bufnr, is_picker)
+  vim.bo[bufnr].ft = "glow"
+
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local chan = vim.api.nvim_open_term(bufnr, {})
+  local args = is_picker and plugin_config.picker_cmd_args or plugin_config.cmd_args
+  local previewer = job:new({
+    command = plugin_config.previewer_cmd,
+    args = args,
+    on_stdout = vim.schedule_wrap(function(_, data)
+      if not data then return end
+      local output_lines = vim.split(data, "\n", {})
+      for _, line in ipairs(output_lines) do
+        pcall(function() vim.api.nvim_chan_send(chan, line .. "\r\n") end)
+      end
+    end),
+    writer = table.concat(lines, "\n"),
+  })
+
+  previewer:start()
+end
+
+M.open = function(entry, bufnr, float)
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
   if not float then
@@ -209,32 +257,10 @@ M.open = function(entry, bufnr, pattern, float)
     vim.wo[win].relativenumber = false
   end
 
-  vim.fn.search(pattern)
-
   local ignore = vim.tbl_contains(plugin_config.cmd_ignore, entry.alias)
-  if plugin_config.previewer_cmd and not ignore then
-    vim.bo[bufnr].ft = "glow"
 
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local chan = vim.api.nvim_open_term(bufnr, {})
-    local previewer = job:new({
-      command = plugin_config.previewer_cmd,
-      args = plugin_config.cmd_args,
-      on_stdout = vim.schedule_wrap(function(_, data)
-        local output_lines = vim.split(data, "\n", {})
-        for _, line in ipairs(output_lines) do
-          vim.api.nvim_chan_send(chan, line .. "\r\n")
-        end
-      end),
-      on_exit = vim.schedule_wrap(function()
-        if pattern then
-          local formatted_pattern = pattern:gsub("`", "")
-          vim.defer_fn(function() vim.fn.search(formatted_pattern) end, 500)
-        end
-      end),
-      writer = table.concat(lines, "\n"),
-    })
-    previewer:start()
+  if plugin_config.previewer_cmd and not ignore then
+    M.render_cmd(bufnr)
   else
     vim.bo[bufnr].ft = "markdown"
   end

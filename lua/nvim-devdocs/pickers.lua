@@ -46,7 +46,7 @@ local metadata_previewer = previewers.new_buffer_previewer({
   end,
 })
 
-local buf_doc_previewer = previewers.new_buffer_previewer({
+local doc_previewer = previewers.new_buffer_previewer({
   title = "Preview",
   keep_last_buf = true,
   define_preview = function(self, entry)
@@ -54,36 +54,20 @@ local buf_doc_previewer = previewers.new_buffer_previewer({
     local file = splited_path[1]
     local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
     local bufnr = self.state.bufnr
-
-    local display_lines = function(lines)
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      vim.bo[bufnr].ft = "markdown"
-      -- TODO: highlight in picker
-      -- vim.api.nvim_buf_call(bufnr, function()
-      --   vim.fn.search(section)
-      --   vim.fn.matchadd("Search", pattern)
-      -- end)
-    end
+    local pattern = splited_path[2]
 
     file_path:_read_async(vim.schedule_wrap(function(content)
       local lines = vim.split(content, "\n")
-      display_lines(lines)
+      local filtered_lines = operations.filter_doc(lines, pattern)
+
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
+
+      if plugin_config.picker_cmd then
+        operations.render_cmd(bufnr, true)
+      else
+        vim.bo[bufnr].ft = "markdown"
+      end
     end))
-  end,
-})
-
-local term_doc_previewer = previewers.new_termopen_previewer({
-  title = "Preview",
-  get_command = function(entry)
-    local splited_path = vim.split(entry.value.path, ",")
-    local file = splited_path[1]
-    local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
-    local args = { plugin_config.previewer_cmd }
-
-    vim.list_extend(args, plugin_config.picker_cmd_args)
-    table.insert(args, path.__tostring(file_path))
-
-    return args
   end,
 })
 
@@ -96,15 +80,14 @@ local open_doc = function(float)
     local splited_path = vim.split(selection.value.path, ",")
     local file = splited_path[1]
     local file_path = path:new(plugin_config.dir_path, "docs", selection.value.alias, file .. ".md")
-    local content = file_path:read()
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(content, "\n"))
+    local lines = file_path:readlines()
+    local filtered_lines = operations.filter_doc(lines, splited_path[2])
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
   else
     bufnr = state.get_global_key("last_preview_bufnr")
   end
 
-  local splited_path = vim.split(selection.value.path, ",")
-
-  operations.open(selection.value, bufnr, splited_path[2], float)
+  operations.open(selection.value, bufnr, float)
 end
 
 M.installation_picker = function()
@@ -175,12 +158,6 @@ M.open_picker = function(alias, float)
     return
   end
 
-  local previewer = buf_doc_previewer
-
-  if plugin_config.previewer_cmd and plugin_config.picker_cmd then
-    previewer = term_doc_previewer
-  end
-
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
@@ -194,7 +171,7 @@ M.open_picker = function(alias, float)
       end,
     }),
     sorter = config.generic_sorter(plugin_config.telescope),
-    previewer = previewer,
+    previewer = doc_previewer,
     attach_mappings = function()
       actions.select_default:replace(function(prompt_bufnr)
         actions.close(prompt_bufnr)
@@ -209,12 +186,6 @@ end
 
 M.global_search_picker = function(float)
   local entries = operations.get_all_entries()
-  local previewer = buf_doc_previewer
-
-  if plugin_config.previewer_cmd and plugin_config.picker_cmd then
-    previewer = term_doc_previewer
-  end
-
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
@@ -228,7 +199,7 @@ M.global_search_picker = function(float)
       end,
     }),
     sorter = config.generic_sorter(plugin_config.telescope),
-    previewer = previewer,
+    previewer = doc_previewer,
     attach_mappings = function()
       actions.select_default:replace(function(prompt_bufnr)
         actions.close(prompt_bufnr)

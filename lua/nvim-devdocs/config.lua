@@ -14,7 +14,6 @@ local config = {
   cmd_args = {},
   cmd_ignore = {},
   picker_cmd = false,
-  picker_cmd_args = {},
   ensure_installed = {},
   mappings = {
     open_in_browser = "",

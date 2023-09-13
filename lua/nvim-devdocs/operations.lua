@@ -213,7 +213,28 @@ M.filter_doc = function(lines, pattern)
   return filtered_lines
 end
 
-M.open = function(entry, bufnr, pattern, float)
+M.render_cmd = function(bufnr)
+  vim.bo[bufnr].ft = "glow"
+
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local chan = vim.api.nvim_open_term(bufnr, {})
+  local previewer = job:new({
+    command = plugin_config.previewer_cmd,
+    args = plugin_config.cmd_args,
+    on_stdout = vim.schedule_wrap(function(_, data)
+      if not data then return end
+      local output_lines = vim.split(data, "\n", {})
+      for _, line in ipairs(output_lines) do
+        pcall(function() vim.api.nvim_chan_send(chan, line .. "\r\n") end)
+      end
+    end),
+    writer = table.concat(lines, "\n"),
+  })
+
+  previewer:start()
+end
+
+M.open = function(entry, bufnr, float)
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
   if not float then
@@ -235,26 +256,10 @@ M.open = function(entry, bufnr, pattern, float)
     vim.wo[win].relativenumber = false
   end
 
-  vim.fn.search(pattern)
-
   local ignore = vim.tbl_contains(plugin_config.cmd_ignore, entry.alias)
-  if plugin_config.previewer_cmd and not ignore then
-    vim.bo[bufnr].ft = "glow"
 
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local chan = vim.api.nvim_open_term(bufnr, {})
-    local previewer = job:new({
-      command = plugin_config.previewer_cmd,
-      args = plugin_config.cmd_args,
-      on_stdout = vim.schedule_wrap(function(_, data)
-        local output_lines = vim.split(data, "\n", {})
-        for _, line in ipairs(output_lines) do
-          vim.api.nvim_chan_send(chan, line .. "\r\n")
-        end
-      end),
-      writer = table.concat(lines, "\n"),
-    })
-    previewer:start()
+  if plugin_config.previewer_cmd and not ignore then
+    M.render_cmd(bufnr)
   else
     vim.bo[bufnr].ft = "markdown"
   end

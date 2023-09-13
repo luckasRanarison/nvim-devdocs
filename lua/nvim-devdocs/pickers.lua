@@ -62,7 +62,7 @@ local doc_previewer = previewers.new_buffer_previewer({
 
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 
-      if plugin_config.picker_cmd then
+      if plugin_config.previewer_cmd and plugin_config.picker_cmd then
         operations.render_cmd(bufnr, true)
       else
         vim.bo[bufnr].ft = "markdown"

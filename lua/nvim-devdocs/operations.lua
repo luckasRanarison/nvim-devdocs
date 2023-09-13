@@ -213,14 +213,15 @@ M.filter_doc = function(lines, pattern)
   return filtered_lines
 end
 
-M.render_cmd = function(bufnr)
+M.render_cmd = function(bufnr, is_picker)
   vim.bo[bufnr].ft = "glow"
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local chan = vim.api.nvim_open_term(bufnr, {})
+  local args = is_picker and plugin_config.picker_cmd_args or plugin_config.cmd_args
   local previewer = job:new({
     command = plugin_config.previewer_cmd,
-    args = plugin_config.cmd_args,
+    args = args,
     on_stdout = vim.schedule_wrap(function(_, data)
       if not data then return end
       local output_lines = vim.split(data, "\n", {})

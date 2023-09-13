@@ -71,7 +71,7 @@ Here is the default configuration:
   cmd_args = {}, -- example using glow: { "-s", "dark", "-w", "80" }
   cmd_ignore = {}, -- ignore cmd rendering for the listed docs
   picker_cmd = false, -- use cmd previewer in picker preview
-  picker_cmd_args = {}, -- example using glow: { "-p" }
+  picker_cmd_args = {}, -- example using glow: { "-s", "dark", "-w", "50" }
   mappings = { -- keymaps for the doc buffer
     open_in_browser = ""
   }

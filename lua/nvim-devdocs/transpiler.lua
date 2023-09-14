@@ -212,9 +212,9 @@ function transpiler:eval(node)
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
     elseif tag_name == "img" and string.match(attributes.src, "^data:") then
-      result = string.format("![%s](%s)", attributes.alt, "data:inline_image")
+      result = string.format("![%s](%s)\n", attributes.alt, "data:inline_image")
     elseif tag_name == "img" then
-      result = string.format("![%s](%s)", attributes.alt, attributes.src)
+      result = string.format("![%s](%s)\n", attributes.alt, attributes.src)
     elseif tag_name == "pre" and attributes["data-language"] then
       result = "\n```" .. attributes["data-language"] .. "\n" .. result .. "\n```\n"
     elseif tag_name == "abbr" then
@@ -325,7 +325,7 @@ function transpiler:eval_table(node)
         inner_result = inner_result .. self:eval(tcol_child)
       end
 
-      result_map[i][j] = inner_result
+      result_map[i][j] = inner_result:gsub("\n", "")
       colspan_map[i][j] = attributes.colspan and attributes.colspan or 1
 
       if max_col_len_map[j] == nil then max_col_len_map[j] = 0 end
@@ -342,7 +342,7 @@ function transpiler:eval_table(node)
 
       if not col_len then break end
 
-      result = result .. "| " .. string.gsub(value, "\n", "") .. string.gsub(string.rep(" ", col_len - #value + 1), "\n", "")
+      result = result .. "| " .. value .. string.rep(" ", col_len - #value + 1)
       current_col = current_col + 1
 
       if colspan > 1 then

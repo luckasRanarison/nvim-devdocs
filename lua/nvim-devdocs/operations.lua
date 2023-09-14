@@ -3,6 +3,7 @@ local M = {}
 local job = require("plenary.job")
 local curl = require("plenary.curl")
 local path = require("plenary.path")
+local state = require("nvim-devdocs.state")
 
 local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
@@ -249,7 +250,16 @@ M.open = function(entry, bufnr, float)
     if not plugin_config.row then float_opts.row = row end
     if not plugin_config.col then float_opts.col = col end
 
-    local win = vim.api.nvim_open_win(bufnr, true, float_opts)
+    local win = nil
+    local last_win = state.get("last_win")
+
+    if last_win and vim.api.nvim_win_is_valid(last_win) then
+      win = last_win
+      vim.api.nvim_win_set_buf(win, bufnr)
+    else
+      win = vim.api.nvim_open_win(bufnr, true, float_opts)
+      state.set("last_win", win)
+    end
 
     vim.wo[win].wrap = plugin_config.wrap
     vim.wo[win].linebreak = plugin_config.wrap

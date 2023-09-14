@@ -20,8 +20,10 @@ jobs:
           chmod a+x ./nvim.appimage
           ./nvim.appimage --appimage-extract
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
+      - name: Install parser
+        run: |
+          nvim --headless +"silent TSInstall html" +"sleep 60" +qa
       - name: Run Tests
         run: |
           nvim --version
-          nvim --headless +"silent TSInstall html" +"sleep 60" +qa
           nvim --headless -u test/init.lua -c "PlenaryBustedDirectory test/ { init='test/init.lua' }"

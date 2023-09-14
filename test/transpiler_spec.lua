@@ -11,7 +11,7 @@ describe("Transpiler", function()
     {
       desc = "<img>",
       input = "<img alt='alt' src='link'/>",
-      expected = "![alt](link)",
+      expected = "![alt](link)\n",
     },
     {
       desc = "<ul>",

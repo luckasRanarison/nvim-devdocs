@@ -322,7 +322,7 @@ function transpiler:eval_table(node)
       local attributes = self:get_node_attributes(tcol_node)
 
       for _, tcol_child in ipairs(tcol_children) do
-        inner_result = self:eval(tcol_child)
+        inner_result = inner_result .. self:eval(tcol_child)
       end
 
       result_map[i][j] = inner_result

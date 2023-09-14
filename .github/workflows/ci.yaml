@@ -22,7 +22,7 @@ jobs:
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
       - name: Install plugins
         run: |
-          nvim --headless -u test/init.lua +"sleep 60"
+          nvim --headless -u test/init.lua +"sleep 60" +qa
       - name: Install parser
         run: |
           nvim --headless -u test/init.lua +"silent TSInstall html" +"sleep 60" +qa

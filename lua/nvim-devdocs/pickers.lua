@@ -13,6 +13,7 @@ local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
 local operations = require("nvim-devdocs.operations")
 local transpiler = require("nvim-devdocs.transpiler")
+local plugin_state = require("nvim-devdocs.state")
 local plugin_config = require("nvim-devdocs.config").get()
 
 local new_docs_picker = function(prompt, entries, previwer, attach)
@@ -63,6 +64,7 @@ local doc_previewer = previewers.new_buffer_previewer({
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 
       if plugin_config.previewer_cmd and plugin_config.picker_cmd then
+        plugin_state.set("preview_lines", filtered_lines)
         operations.render_cmd(bufnr, true)
       else
         vim.bo[bufnr].ft = "markdown"
@@ -72,17 +74,13 @@ local doc_previewer = previewers.new_buffer_previewer({
 })
 
 local open_doc = function(float)
-  local bufnr
+  local bufnr = nil
   local selection = action_state.get_selected_entry()
 
   if plugin_config.picker_cmd then
     bufnr = vim.api.nvim_create_buf(false, true)
-    local splited_path = vim.split(selection.value.path, ",")
-    local file = splited_path[1]
-    local file_path = path:new(plugin_config.dir_path, "docs", selection.value.alias, file .. ".md")
-    local lines = file_path:readlines()
-    local filtered_lines = operations.filter_doc(lines, splited_path[2])
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
+    local lines = plugin_state.get("preview_lines")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   else
     bufnr = state.get_global_key("last_preview_bufnr")
   end

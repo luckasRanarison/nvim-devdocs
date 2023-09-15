@@ -13,16 +13,6 @@ local normalize_html = function(str)
   return str
 end
 
-local is_inline_tag = function(tag_name)
-  -- stylua: ignore
-  local inline_tags = {
-    "span", "a", "strong", "em", "abbr", "code", "i",
-    "s", "sub", "sup", "mark", "small", "var", "kbd",
-  }
-
-  return vim.tbl_contains(inline_tags, tag_name)
-end
-
 local tag_mappings = {
   h1 = { left = "# ", right = "\n\n" },
   h2 = { left = "## ", right = "\n\n" },
@@ -73,16 +63,39 @@ local tag_mappings = {
   hr = { right = "---\n\n" },
 }
 
-local skipable_tag = {
+local inline_tags = {
+  "span",
+  "a",
+  "strong",
+  "em",
+  "abbr",
+  "code",
+  "i",
+  "s",
+  "sub",
+  "sup",
+  "mark",
+  "small",
+  "var",
+  "kbd",
+}
+
+local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, tag_name) end
+
+local skipable_tags = {
   "input",
 
-  -- exceptions, table -> child
+  -- exceptions, (parent) table -> child
   "tr",
   "td",
   "th",
   "thead",
   "tbody",
 }
+
+local is_skipable_tag = function(tag_name) return vim.tbl_contains(skipable_tags, tag_name) end
+
+----------------------------------------------------------------
 
 local transpiler = {}
 
@@ -151,7 +164,7 @@ function transpiler:get_node_attributes(node)
   local attributes = {}
   local tag_node = node:named_child()
 
-  if tag_node == nil then return {} end
+  if not tag_node then return {} end
 
   local tag_children = tag_node:named_children()
 
@@ -185,6 +198,23 @@ function transpiler:filter_tag_children(node)
   return filtered
 end
 
+---@return string, table<string, string>
+function transpiler:transpile()
+  self.parser:for_each_tree(function(tree)
+    local root = tree:root()
+    if root then
+      local children = root:named_children()
+      for _, node in ipairs(children) do
+        self.result = self.result .. self:eval(node)
+      end
+    end
+  end)
+
+  self.result = self.result:gsub("\n\n\n+", "\n\n")
+
+  return self.result, self.sections
+end
+
 ---@param node TSNode
 function transpiler:eval(node)
   local result = ""
@@ -207,7 +237,7 @@ function transpiler:eval(node)
       end
     end
 
-    if vim.tbl_contains(skipable_tag, tag_name) then return "" end
+    if is_skipable_tag(tag_name) then return "" end
 
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
@@ -264,7 +294,7 @@ function transpiler:eval_child(node, parent_tag)
   local tag_name = self:get_node_tag_name(node)
   local sibling = node:next_named_sibling()
 
-  -- check if there should be additional spaces/characters between two elements
+  -- checks if there should be additional spaces/characters between two elements
   if sibling then
     local c_row_end, c_col_end = node:end_()
     local s_row_start, s_col_start = sibling:start()
@@ -313,6 +343,7 @@ function transpiler:eval_table(node)
 
   for i, tr in ipairs(tr_nodes) do
     local tr_children = self:filter_tag_children(tr)
+
     result_map[i] = {}
     colspan_map[i] = {}
 
@@ -327,9 +358,9 @@ function transpiler:eval_table(node)
 
       inner_result = inner_result:gsub("\n", "")
       result_map[i][j] = inner_result
-      colspan_map[i][j] = attributes.colspan and attributes.colspan or 1
+      colspan_map[i][j] = attributes.colspan or 1
 
-      if max_col_len_map[j] == nil then max_col_len_map[j] = 1 end
+      if not max_col_len_map[j] then max_col_len_map[j] = 1 end
       if max_col_len_map[j] < #inner_result then max_col_len_map[j] = #inner_result end
     end
   end
@@ -388,21 +419,7 @@ function transpiler:eval_table(node)
   return result
 end
 
-function transpiler:transpile()
-  self.parser:for_each_tree(function(tree)
-    local root = tree:root()
-    if root then
-      local children = root:named_children()
-      for _, node in ipairs(children) do
-        self.result = self.result .. self:eval(node)
-      end
-    end
-  end)
-
-  self.result = self.result:gsub("\n\n\n+", "\n\n")
-
-  return self.result, self.sections
-end
+----------------------------------------------------------------
 
 M.to_yaml = function(entry)
   local lines = {}

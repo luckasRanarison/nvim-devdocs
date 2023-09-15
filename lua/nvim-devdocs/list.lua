@@ -1,17 +1,11 @@
 local M = {}
 
-local path = require("plenary.path")
-
 local notify = require("nvim-devdocs.notify")
-local plugin_config = require("nvim-devdocs.config").get()
-
-local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
-local registery_path = path:new(plugin_config.dir_path, "registery.json")
 
 M.get_installed_alias = function()
-  if not lock_path:exists() then return {} end
+  if not LOCK_PATH:exists() then return {} end
 
-  local lockfile = lock_path:read()
+  local lockfile = LOCK_PATH:read()
   local lock_parsed = vim.fn.json_decode(lockfile)
   local installed = vim.tbl_keys(lock_parsed)
 
@@ -19,12 +13,12 @@ M.get_installed_alias = function()
 end
 
 M.get_installed_entry = function()
-  if not registery_path:exists() then
+  if not REGISTERY_PATH:exists() then
     notify.log_err("Devdocs registery not found, please run :DevdocsFetch")
     return
   end
 
-  local content = registery_path:read()
+  local content = REGISTERY_PATH:read()
   local parsed = vim.fn.json_decode(content)
   local installed = M.get_installed_alias()
 
@@ -39,12 +33,12 @@ M.get_installed_entry = function()
 end
 
 M.get_updatable = function()
-  if not registery_path:exists() or not lock_path:exists() then return {} end
+  if not REGISTERY_PATH:exists() or not LOCK_PATH:exists() then return {} end
 
   local results = {}
-  local registery = registery_path:read()
+  local registery = REGISTERY_PATH:read()
   local registery_parsed = vim.fn.json_decode(registery)
-  local lockfile = lock_path:read()
+  local lockfile = LOCK_PATH:read()
   local lock_parsed = vim.fn.json_decode(lockfile)
 
   for alias, value in pairs(lock_parsed) do

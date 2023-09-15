@@ -1,23 +1,16 @@
-local path = require("plenary.path")
-
 local notify = require("nvim-devdocs.notify")
-local plugin_config = require("nvim-devdocs.config").get()
-local html_to_md = require("nvim-devdocs.transpiler").html_to_md
+local transpiler = require("nvim-devdocs.transpiler")
 
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
+  local current_doc_dir = DOCS_DIR:joinpath(alias)
 
   notify.log("Building " .. alias .. " documentation...")
 
-  local docs_dir = path:new(plugin_config.dir_path, "docs")
-  local current_doc_dir = path:new(docs_dir, alias)
-  local index_path = path:new(plugin_config.dir_path, "index.json")
-  local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
-
-  if not docs_dir:exists() then docs_dir:mkdir() end
+  if not DOCS_DIR:exists() then DOCS_DIR:mkdir() end
+  if not INDEX_PATH:exists() then INDEX_PATH:write("{}", "w") end
+  if not LOCK_PATH:exists() then LOCK_PATH:write("{}", "w") end
   if not current_doc_dir:exists() then current_doc_dir:mkdir() end
-  if not index_path:exists() then index_path:write("{}", "w") end
-  if not lock_path:exists() then lock_path:write("{}", "w") end
 
   local section_map = {}
   local path_map = {}
@@ -35,17 +28,14 @@ local function build_docs(entry, index, docs)
 
   for key, doc in pairs(docs) do
     local sections = section_map[key]
-
-    local markdown, md_sections = html_to_md(doc, sections)
+    local markdown, md_sections = transpiler.html_to_md(doc, sections)
+    local file_path = current_doc_dir:joinpath(tostring(count) .. ".md")
 
     for id, md_path in pairs(md_sections) do
       path_map[key .. "#" .. id] = count .. "," .. md_path
     end
 
     path_map[key] = tostring(count)
-
-    local file_path = path:new(current_doc_dir, tostring(count) .. ".md")
-
     file_path:write(markdown, "w")
     count = count + 1
   end
@@ -56,13 +46,13 @@ local function build_docs(entry, index, docs)
     index.entries[i].path = path_map[index_entry.path] or path_map[main]
   end
 
-  local index_parsed = vim.fn.json_decode(index_path:read())
+  local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
   index_parsed[alias] = index
-  index_path:write(vim.fn.json_encode(index_parsed), "w")
+  INDEX_PATH:write(vim.fn.json_encode(index_parsed), "w")
 
-  local lock_parsed = vim.fn.json_decode(lock_path:read())
+  local lock_parsed = vim.fn.json_decode(LOCK_PATH:read())
   lock_parsed[alias] = entry
-  lock_path:write(vim.fn.json_encode(lock_parsed), "w")
+  LOCK_PATH:write(vim.fn.json_encode(lock_parsed), "w")
 
   notify.log("Build complete!")
 end

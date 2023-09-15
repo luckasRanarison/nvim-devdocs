@@ -1,16 +1,11 @@
 local M = {}
 
-local path = require("plenary.path")
-
 local list = require("nvim-devdocs.list")
-local plugin_config = require("nvim-devdocs.config").get()
 
 M.get_non_installed = function(arg_lead)
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
+  if not REGISTERY_PATH:exists() then return {} end
 
-  if not registery_path:exists() then return {} end
-
-  local content = registery_path:read()
+  local content = REGISTERY_PATH:read()
   local parsed = vim.fn.json_decode(content)
   local installed = list.get_installed_alias()
   local args = {}

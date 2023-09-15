@@ -5,6 +5,7 @@ local state = {
   last_win = nil,
 }
 
+---@return any
 M.get = function(key) return state[key] end
 
 M.set = function(key, value) state[key] = value end

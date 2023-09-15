@@ -1,6 +1,5 @@
 local M = {}
 
-local path = require("plenary.path")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 local previewers = require("telescope.previewers")
@@ -53,7 +52,7 @@ local doc_previewer = previewers.new_buffer_previewer({
   define_preview = function(self, entry)
     local splited_path = vim.split(entry.value.path, ",")
     local file = splited_path[1]
-    local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
+    local file_path = DOCS_DIR:joinpath(entry.value.alias, file .. ".md")
     local bufnr = self.state.bufnr
     local pattern = splited_path[2]
 
@@ -89,14 +88,12 @@ local open_doc = function(float)
 end
 
 M.installation_picker = function()
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
-
-  if not registery_path:exists() then
+  if not REGISTERY_PATH:exists() then
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
     return
   end
 
-  local content = registery_path:read()
+  local content = REGISTERY_PATH:read()
   local parsed = vim.fn.json_decode(content)
   local picker = new_docs_picker("Install documentation", parsed, metadata_previewer, function()
     actions.select_default:replace(function(prompt_bufnr)
@@ -148,14 +145,7 @@ M.update_picker = function()
   picker:find()
 end
 
-M.open_picker = function(alias, float)
-  local entries = operations.get_entries(alias)
-
-  if not entries then
-    notify.log_err(alias .. " documentation is not installed")
-    return
-  end
-
+M.open_picker = function(entries, float)
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
@@ -182,33 +172,14 @@ M.open_picker = function(alias, float)
   picker:find()
 end
 
-M.global_search_picker = function(float)
-  local entries = operations.get_all_entries()
-  local picker = pickers.new(plugin_config.telescope, {
-    prompt_title = "Select an entry",
-    finder = finders.new_table({
-      results = entries,
-      entry_maker = function(entry)
-        return {
-          value = entry,
-          display = entry.name,
-          ordinal = entry.name,
-        }
-      end,
-    }),
-    sorter = config.generic_sorter(plugin_config.telescope),
-    previewer = doc_previewer,
-    attach_mappings = function()
-      actions.select_default:replace(function(prompt_bufnr)
-        actions.close(prompt_bufnr)
-        open_doc(float)
-      end)
+M.open_picker_alias = function(alias, float)
+  local entries = operations.get_entries(alias)
 
-      return true
-    end,
-  })
-
-  picker:find()
+  if not entries then
+    notify.log_err(alias .. " documentation is not installed")
+  else
+    M.open_picker(entries, float)
+  end
 end
 
 return M

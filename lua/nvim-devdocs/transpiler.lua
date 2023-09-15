@@ -13,25 +13,6 @@ local normalize_html = function(str)
   return str
 end
 
-local inline_tags = {
-  "span",
-  "a",
-  "strong",
-  "em",
-  "abbr",
-  "code",
-  "i",
-  "s",
-  "sub",
-  "sup",
-  "mark",
-  "small",
-  "var",
-  "kbd",
-}
-
-local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, tag_name) end
-
 local tag_mappings = {
   h1 = { left = "# ", right = "\n\n" },
   h2 = { left = "## ", right = "\n\n" },
@@ -82,16 +63,37 @@ local tag_mappings = {
   hr = { right = "---\n\n" },
 }
 
-local skipable_tag = {
+local inline_tags = {
+  "span",
+  "a",
+  "strong",
+  "em",
+  "abbr",
+  "code",
+  "i",
+  "s",
+  "sub",
+  "sup",
+  "mark",
+  "small",
+  "var",
+  "kbd",
+}
+
+local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, tag_name) end
+
+local skipable_tags = {
   "input",
 
-  -- exceptions, table -> child
+  -- exceptions, (parent) table -> child
   "tr",
   "td",
   "th",
   "thead",
   "tbody",
 }
+
+local is_skipable_tag = function(tag_name) return vim.tbl_contains(skipable_tags, tag_name) end
 
 ----------------------------------------------------------------
 
@@ -162,7 +164,7 @@ function transpiler:get_node_attributes(node)
   local attributes = {}
   local tag_node = node:named_child()
 
-  if tag_node == nil then return {} end
+  if not tag_node then return {} end
 
   local tag_children = tag_node:named_children()
 
@@ -235,7 +237,7 @@ function transpiler:eval(node)
       end
     end
 
-    if vim.tbl_contains(skipable_tag, tag_name) then return "" end
+    if is_skipable_tag(tag_name) then return "" end
 
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
@@ -354,10 +356,11 @@ function transpiler:eval_table(node)
         inner_result = inner_result .. self:eval(tcol_child)
       end
 
-      result_map[i][j] = inner_result:gsub("\n", "")
-      colspan_map[i][j] = attributes.colspan and attributes.colspan or 1
+      inner_result = inner_result:gsub("\n", "")
+      result_map[i][j] = inner_result
+      colspan_map[i][j] = attributes.colspan or 1
 
-      if max_col_len_map[j] == nil then max_col_len_map[j] = 0 end
+      if not max_col_len_map[j] then max_col_len_map[j] = 1 end
       if max_col_len_map[j] < #inner_result then max_col_len_map[j] = #inner_result end
     end
   end

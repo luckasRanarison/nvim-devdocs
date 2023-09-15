@@ -2,36 +2,32 @@ local M = {}
 
 local job = require("plenary.job")
 local curl = require("plenary.curl")
-local path = require("plenary.path")
-local state = require("nvim-devdocs.state")
 
 local list = require("nvim-devdocs.list")
+local state = require("nvim-devdocs.state")
 local notify = require("nvim-devdocs.notify")
-local plugin_config = require("nvim-devdocs.config").get()
+local config = require("nvim-devdocs.config")
 local build_docs = require("nvim-devdocs.build")
 
 local devdocs_site_url = "https://devdocs.io"
 local devdocs_cdn_url = "https://documents.devdocs.io"
-local docs_dir = path:new(plugin_config.dir_path, "docs")
-local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
-local registery_path = path:new(plugin_config.dir_path, "registery.json")
-local index_path = path:new(plugin_config.dir_path, "index.json")
+
+local plugin_config = config.get()
+local data_dir = config.new_path()
+local index_path = config.new_path("index.json")
+local lock_path = config.new_path("docs-lock.json")
+local registery_path = config.new_path("registery.json")
 
 M.fetch = function()
   notify.log("Fetching DevDocs registery...")
 
   curl.get(devdocs_site_url .. "/docs.json", {
     headers = {
-      ["User-agent"] = "chrome",
+      ["User-agent"] = "chrome", -- fake user agent, see #25
     },
     callback = function(response)
-      local dir_path = path:new(plugin_config.dir_path)
-      local file_path = path:new(plugin_config.dir_path, "registery.json")
-
-      if not dir_path:exists() then dir_path:mkdir() end
-
-      file_path:write(response.body, "w", 438)
-
+      if not data_dir:exists() then data_dir:mkdir() end
+      registery_path:write(response.body, "w", 438)
       notify.log("DevDocs registery has been written to the disk")
     end,
     on_error = function(error)
@@ -138,7 +134,7 @@ M.uninstall = function(alias)
   else
     local index = vim.fn.json_decode(index_path:read())
     local lockfile = vim.fn.json_decode(lock_path:read())
-    local doc_path = path:new(docs_dir, alias)
+    local doc_path = config.new_path("docs", alias)
 
     index[alias] = nil
     lockfile[alias] = nil
@@ -215,7 +211,7 @@ M.filter_doc = function(lines, pattern)
 end
 
 M.render_cmd = function(bufnr, is_picker)
-  vim.bo[bufnr].ft = "glow"
+  vim.bo[bufnr].ft = plugin_config.previewer_cmd
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local chan = vim.api.nvim_open_term(bufnr, {})
@@ -247,8 +243,8 @@ M.open = function(entry, bufnr, float)
     local col = (ui.width - plugin_config.float_win.width) * 0.5
     local float_opts = plugin_config.float_win
 
-    if not plugin_config.row then float_opts.row = row end
-    if not plugin_config.col then float_opts.col = col end
+    float_opts.row = plugin_config.row or row
+    float_opts.col = plugin_config.col or col
 
     local win = nil
     local last_win = state.get("last_win")
@@ -275,20 +271,7 @@ M.open = function(entry, bufnr, float)
     vim.bo[bufnr].ft = "markdown"
   end
 
-  local slug = entry.alias:gsub("-", "~")
-  local keymaps = plugin_config.mappings
-  local set_buf_keymap = function(key, action, description)
-    vim.keymap.set("n", key, action, { buffer = bufnr, desc = description })
-  end
-
-  if type(keymaps.open_in_browser) == "string" and keymaps.open_in_browser ~= "" then
-    set_buf_keymap(
-      keymaps.open_in_browser,
-      function() vim.ui.open("https://devdocs.io/" .. slug .. "/" .. entry.link) end,
-      "Open in the browser"
-    )
-  end
-
+  config.set_keymaps(bufnr, entry)
   plugin_config.after_open(bufnr)
 end
 

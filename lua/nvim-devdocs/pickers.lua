@@ -148,14 +148,7 @@ M.update_picker = function()
   picker:find()
 end
 
-M.open_picker = function(alias, float)
-  local entries = operations.get_entries(alias)
-
-  if not entries then
-    notify.log_err(alias .. " documentation is not installed")
-    return
-  end
-
+M.open_picker = function(entries, float)
   local picker = pickers.new(plugin_config.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
@@ -182,33 +175,14 @@ M.open_picker = function(alias, float)
   picker:find()
 end
 
-M.global_search_picker = function(float)
-  local entries = operations.get_all_entries()
-  local picker = pickers.new(plugin_config.telescope, {
-    prompt_title = "Select an entry",
-    finder = finders.new_table({
-      results = entries,
-      entry_maker = function(entry)
-        return {
-          value = entry,
-          display = entry.name,
-          ordinal = entry.name,
-        }
-      end,
-    }),
-    sorter = config.generic_sorter(plugin_config.telescope),
-    previewer = doc_previewer,
-    attach_mappings = function()
-      actions.select_default:replace(function(prompt_bufnr)
-        actions.close(prompt_bufnr)
-        open_doc(float)
-      end)
+M.open_picker_alias = function(alias, float)
+  local entries = operations.get_entries(alias)
 
-      return true
-    end,
-  })
-
-  picker:find()
+  if not entries then
+    notify.log_err(alias .. " documentation is not installed")
+  else
+    M.open_picker(entries, float)
+  end
 end
 
 return M

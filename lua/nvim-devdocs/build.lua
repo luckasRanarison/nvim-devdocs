@@ -1,18 +1,17 @@
 local path = require("plenary.path")
-
 local notify = require("nvim-devdocs.notify")
-local plugin_config = require("nvim-devdocs.config").get()
-local html_to_md = require("nvim-devdocs.transpiler").html_to_md
+local config = require("nvim-devdocs.config")
+local transpiler = require("nvim-devdocs.transpiler")
 
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
 
   notify.log("Building " .. alias .. " documentation...")
 
-  local docs_dir = path:new(plugin_config.dir_path, "docs")
-  local current_doc_dir = path:new(docs_dir, alias)
-  local index_path = path:new(plugin_config.dir_path, "index.json")
-  local lock_path = path:new(plugin_config.dir_path, "docs-lock.json")
+  local docs_dir = config.new_path("docs")
+  local current_doc_dir = config.new_path("docs", alias)
+  local index_path = config.new_path("index.json")
+  local lock_path = config.new_path("docs-lock.json")
 
   if not docs_dir:exists() then docs_dir:mkdir() end
   if not current_doc_dir:exists() then current_doc_dir:mkdir() end
@@ -35,8 +34,7 @@ local function build_docs(entry, index, docs)
 
   for key, doc in pairs(docs) do
     local sections = section_map[key]
-
-    local markdown, md_sections = html_to_md(doc, sections)
+    local markdown, md_sections = transpiler.html_to_md(doc, sections)
 
     for id, md_path in pairs(md_sections) do
       path_map[key .. "#" .. id] = count .. "," .. md_path

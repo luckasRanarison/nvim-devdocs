@@ -26,28 +26,22 @@ M.uninstall_doc = function(args)
   end
 end
 
-M.open_doc = function(args)
+M.open_doc = function(args, float)
   if vim.tbl_isempty(args.fargs) then
-    pickers.global_search_picker(false)
+    local entries = operations.get_all_entries()
+    pickers.open_picker(entries, float)
   else
     local alias = args.fargs[1]
-    pickers.open_picker(alias, false)
+    pickers.open_picker_alias(alias, float)
   end
 end
 
-M.open_doc_float = function(args)
-  if vim.tbl_isempty(args.fargs) then
-    pickers.global_search_picker(true)
-  else
-    local alias = args.fargs[1]
-    pickers.open_picker(alias, true)
-  end
-end
+M.open_doc_float = function(args) M.open_doc(args, true) end
 
 M.open_doc_current_file = function(float)
   local filetype = vim.bo.filetype
   local alias = filetypes[filetype] or filetype
-  pickers.open_picker(alias, float)
+  pickers.open_picker_alias(alias, float)
 end
 
 M.update = function(args)

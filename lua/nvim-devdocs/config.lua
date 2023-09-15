@@ -27,8 +27,6 @@ local config = {
 
 M.get = function() return config end
 
-M.new_path = function(...) return path:new(config.dir_path, ...) end
-
 M.setup = function(new_config)
   if new_config ~= nil then
     for key, value in pairs(new_config) do
@@ -36,11 +34,11 @@ M.setup = function(new_config)
     end
   end
 
-  DATA_DIR = M.new_path()
-  DOCS_DIR = M.new_path("docs")
-  INDEX_PATH = M.new_path("index.json")
-  LOCK_PATH = M.new_path("docs-lock.json")
-  REGISTERY_PATH = M.new_path("registery.json")
+  DATA_DIR = path:new(config.dir_path)
+  DOCS_DIR = DATA_DIR:joinpath("docs")
+  INDEX_PATH = DATA_DIR:joinpath("index.json")
+  LOCK_PATH = DATA_DIR:joinpath("docs-lock.json")
+  REGISTERY_PATH = DATA_DIR:joinpath("registery.json")
 
   return config
 end

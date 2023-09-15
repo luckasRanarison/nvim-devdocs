@@ -130,7 +130,7 @@ M.uninstall = function(alias)
   else
     local index = vim.fn.json_decode(INDEX_PATH:read())
     local lockfile = vim.fn.json_decode(LOCK_PATH:read())
-    local doc_path = config.new_path("docs", alias)
+    local doc_path = DOCS_DIR:joinpath(alias)
 
     index[alias] = nil
     lockfile[alias] = nil

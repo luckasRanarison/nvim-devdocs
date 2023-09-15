@@ -1,6 +1,5 @@
 local M = {}
 
-local path = require("plenary.path")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 local previewers = require("telescope.previewers")
@@ -53,7 +52,7 @@ local doc_previewer = previewers.new_buffer_previewer({
   define_preview = function(self, entry)
     local splited_path = vim.split(entry.value.path, ",")
     local file = splited_path[1]
-    local file_path = path:new(plugin_config.dir_path, "docs", entry.value.alias, file .. ".md")
+    local file_path = DOCS_DIR:joinpath(entry.value.alias, file .. ".md")
     local bufnr = self.state.bufnr
     local pattern = splited_path[2]
 
@@ -89,14 +88,12 @@ local open_doc = function(float)
 end
 
 M.installation_picker = function()
-  local registery_path = path:new(plugin_config.dir_path, "registery.json")
-
-  if not registery_path:exists() then
+  if not REGISTERY_PATH:exists() then
     notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
     return
   end
 
-  local content = registery_path:read()
+  local content = REGISTERY_PATH:read()
   local parsed = vim.fn.json_decode(content)
   local picker = new_docs_picker("Install documentation", parsed, metadata_previewer, function()
     actions.select_default:replace(function(prompt_bufnr)

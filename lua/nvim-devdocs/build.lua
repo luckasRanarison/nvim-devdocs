@@ -1,11 +1,9 @@
-local path = require("plenary.path")
 local notify = require("nvim-devdocs.notify")
-local config = require("nvim-devdocs.config")
 local transpiler = require("nvim-devdocs.transpiler")
 
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
-  local current_doc_dir = config.new_path("docs", alias)
+  local current_doc_dir = DOCS_DIR:joinpath(alias)
 
   notify.log("Building " .. alias .. " documentation...")
 
@@ -31,15 +29,13 @@ local function build_docs(entry, index, docs)
   for key, doc in pairs(docs) do
     local sections = section_map[key]
     local markdown, md_sections = transpiler.html_to_md(doc, sections)
+    local file_path = current_doc_dir:joinpath(tostring(count) .. ".md")
 
     for id, md_path in pairs(md_sections) do
       path_map[key .. "#" .. id] = count .. "," .. md_path
     end
 
     path_map[key] = tostring(count)
-
-    local file_path = path:new(current_doc_dir, tostring(count) .. ".md")
-
     file_path:write(markdown, "w")
     count = count + 1
   end

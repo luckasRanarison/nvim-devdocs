@@ -13,10 +13,6 @@ local devdocs_site_url = "https://devdocs.io"
 local devdocs_cdn_url = "https://documents.devdocs.io"
 
 local plugin_config = config.get()
-local data_dir = config.new_path()
-local index_path = config.new_path("index.json")
-local lock_path = config.new_path("docs-lock.json")
-local registery_path = config.new_path("registery.json")
 
 M.fetch = function()
   notify.log("Fetching DevDocs registery...")
@@ -26,8 +22,8 @@ M.fetch = function()
       ["User-agent"] = "chrome", -- fake user agent, see #25
     },
     callback = function(response)
-      if not data_dir:exists() then data_dir:mkdir() end
-      registery_path:write(response.body, "w", 438)
+      if not DATA_DIR:exists() then DATA_DIR:mkdir() end
+      REGISTERY_PATH:write(response.body, "w", 438)
       notify.log("DevDocs registery has been written to the disk")
     end,
     on_error = function(error)
@@ -37,7 +33,7 @@ M.fetch = function()
 end
 
 M.install = function(entry, verbose, is_update)
-  if not registery_path:exists() then
+  if not REGISTERY_PATH:exists() then
     if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
     return
   end
@@ -94,13 +90,13 @@ M.install = function(entry, verbose, is_update)
 end
 
 M.install_args = function(args, verbose, is_update)
-  if not registery_path:exists() then
+  if not REGISTERY_PATH:exists() then
     if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
     return
   end
 
   local updatable = list.get_updatable()
-  local content = registery_path:read()
+  local content = REGISTERY_PATH:read()
   local parsed = vim.fn.json_decode(content)
 
   for _, arg in ipairs(args) do
@@ -132,15 +128,15 @@ M.uninstall = function(alias)
   if not vim.tbl_contains(installed, alias) then
     notify.log(alias .. " documentation is already uninstalled")
   else
-    local index = vim.fn.json_decode(index_path:read())
-    local lockfile = vim.fn.json_decode(lock_path:read())
+    local index = vim.fn.json_decode(INDEX_PATH:read())
+    local lockfile = vim.fn.json_decode(LOCK_PATH:read())
     local doc_path = config.new_path("docs", alias)
 
     index[alias] = nil
     lockfile[alias] = nil
 
-    index_path:write(vim.fn.json_encode(index), "w")
-    lock_path:write(vim.fn.json_encode(lockfile), "w")
+    INDEX_PATH:write(vim.fn.json_encode(index), "w")
+    LOCK_PATH:write(vim.fn.json_encode(lockfile), "w")
     doc_path:rm({ recursive = true })
 
     notify.log(alias .. " documentation has been uninstalled")
@@ -151,9 +147,9 @@ M.get_entries = function(alias)
   local installed = list.get_installed_alias()
   local is_installed = vim.tbl_contains(installed, alias)
 
-  if not index_path:exists() or not is_installed then return end
+  if not INDEX_PATH:exists() or not is_installed then return end
 
-  local index_parsed = vim.fn.json_decode(index_path:read())
+  local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
   local entries = index_parsed[alias].entries
 
   for key, _ in ipairs(entries) do
@@ -164,10 +160,10 @@ M.get_entries = function(alias)
 end
 
 M.get_all_entries = function()
-  if not index_path:exists() then return {} end
+  if not INDEX_PATH:exists() then return {} end
 
   local entries = {}
-  local index_parsed = vim.fn.json_decode(index_path:read())
+  local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
 
   for alias, index in pairs(index_parsed) do
     for _, doc_entry in ipairs(index.entries) do

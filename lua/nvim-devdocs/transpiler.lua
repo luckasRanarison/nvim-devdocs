@@ -325,10 +325,11 @@ function transpiler:eval_table(node)
         inner_result = inner_result .. self:eval(tcol_child)
       end
 
-      result_map[i][j] = inner_result:gsub("\n", "")
+      inner_result = inner_result:gsub("\n", "")
+      result_map[i][j] = inner_result
       colspan_map[i][j] = attributes.colspan and attributes.colspan or 1
 
-      if max_col_len_map[j] == nil then max_col_len_map[j] = 0 end
+      if max_col_len_map[j] == nil then max_col_len_map[j] = 1 end
       if max_col_len_map[j] < #inner_result then max_col_len_map[j] = #inner_result end
     end
   end

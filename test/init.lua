@@ -17,7 +17,7 @@ vim.opt.rtp:prepend(lazypath)
 local plugins = {
   "nvim-treesitter/nvim-treesitter",
   "nvim-lua/plenary.nvim",
-  "luckasRanarison/nvim-devdocs",
+  { dir = "../" },
 }
 
 require("lazy").setup(plugins)

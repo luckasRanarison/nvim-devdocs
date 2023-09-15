@@ -37,6 +37,7 @@ local tag_mappings = {
   var = { left = "`", right = "`" },
   kbd = { left = "`", right = "`" },
   mark = { left = "`", right = "`" },
+  tt = { left = "`", right = "`" },
   b = { left = "`", right = "`" },
   strong = { left = "**", right = "**" },
   i = { left = "_", right = "_" },
@@ -70,6 +71,7 @@ local inline_tags = {
   "em",
   "abbr",
   "code",
+  "tt",
   "i",
   "s",
   "sub",
@@ -227,13 +229,13 @@ function transpiler:eval(node)
   elseif node_type == "element" then
     local tag_node = node:named_child()
     local tag_type = tag_node:type()
-    local tag_name = self:get_node_text(tag_node:named_child())
+    local tag_name = self:get_node_tag_name(node)
 
     if tag_type == "start_tag" then
       local children = self:filter_tag_children(node)
 
       for _, child in ipairs(children) do
-        result = result .. self:eval_child(child, tag_name)
+        result = result .. self:eval_child(child, node)
       end
     end
 
@@ -289,17 +291,21 @@ function transpiler:eval(node)
 end
 
 ---@param node TSNode
-function transpiler:eval_child(node, parent_tag)
+function transpiler:eval_child(node, parent_node)
   local result = self:eval(node)
   local tag_name = self:get_node_tag_name(node)
   local sibling = node:next_named_sibling()
+  local parent_tag = self:get_node_tag_name(parent_node)
+  local attributes = self:get_node_attributes(parent_node)
 
   -- checks if there should be additional spaces/characters between two elements
   if sibling then
     local c_row_end, c_col_end = node:end_()
     local s_row_start, s_col_start = sibling:start()
 
-    if parent_tag == "pre" then
+    -- The <pre> HTML element represents preformatted text
+    -- which is to be presented exactly as written in the HTML file
+    if parent_tag == "pre" or attributes.class == "_rfc-pre" then
       local row, col = c_row_end, c_col_end
       while row ~= s_row_start or col ~= s_col_start do
         local char = self:get_text_range(row, col, row, col + 1)

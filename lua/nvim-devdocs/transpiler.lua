@@ -21,6 +21,7 @@ local tag_mappings = {
   h5 = { left = "##### ", right = "\n\n" },
   h6 = { left = "###### ", right = "\n\n" },
   span = {},
+  nav = {},
   header = {},
   div = {},
   section = { right = "\n" },
@@ -82,8 +83,6 @@ local inline_tags = {
   "kbd",
 }
 
-local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, tag_name) end
-
 local skipable_tags = {
   "input",
 
@@ -95,7 +94,16 @@ local skipable_tags = {
   "tbody",
 }
 
+local monospace_tags = {
+  "code",
+  "tt",
+  "samp",
+  "kbd",
+}
+
+local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, tag_name) end
 local is_skipable_tag = function(tag_name) return vim.tbl_contains(skipable_tags, tag_name) end
+local is_monospace_tag = function(tag_name) return vim.tbl_contains(monospace_tags, tag_name) end
 
 ----------------------------------------------------------------
 
@@ -148,6 +156,8 @@ end
 
 ---@param node TSNode
 function transpiler:get_node_tag_name(node)
+  if not node then return "" end
+
   local tag_name = nil
   local child = node:named_child()
 
@@ -157,6 +167,19 @@ function transpiler:get_node_tag_name(node)
   end
 
   return tag_name
+end
+
+---@param node TSNode
+function transpiler:has_parent_tag(node, tag_name)
+  local current = node:parent()
+
+  while current do
+    local parent_tag_name = self:get_node_tag_name(current)
+    if parent_tag_name == tag_name then return true end
+    current = current:parent()
+  end
+
+  return false
 end
 
 ---@param node TSNode
@@ -230,6 +253,8 @@ function transpiler:eval(node)
     local tag_node = node:named_child()
     local tag_type = tag_node:type()
     local tag_name = self:get_node_tag_name(node)
+    local parent_node = node:parent()
+    local parent_tag_name = self:get_node_tag_name(parent_node)
 
     if tag_type == "start_tag" then
       local children = self:filter_tag_children(node)
@@ -240,6 +265,7 @@ function transpiler:eval(node)
     end
 
     if is_skipable_tag(tag_name) then return "" end
+    if is_monospace_tag(tag_name) and self:has_parent_tag(node, "pre") then return result end
 
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
@@ -249,6 +275,9 @@ function transpiler:eval(node)
       result = string.format("![%s](%s)\n", attributes.alt, attributes.src)
     elseif tag_name == "pre" and attributes["data-language"] then
       result = "\n```" .. attributes["data-language"] .. "\n" .. result .. "\n```\n"
+    elseif tag_name == "pre" and attributes["class"] then
+      local language = attributes["class"]:match("language%-(.+)")
+      result = "\n```" .. language .. "\n" .. result .. "\n```\n"
     elseif tag_name == "abbr" then
       result = string.format("%s(%s)", result, attributes.title)
     elseif tag_name == "iframe" then
@@ -258,9 +287,6 @@ function transpiler:eval(node)
     elseif tag_name == "table" then
       result = self:eval_table(node) .. "\n"
     elseif tag_name == "li" then
-      local parent_node = node:parent()
-      local parent_tag_name = self:get_node_tag_name(parent_node)
-
       if parent_tag_name == "ul" then result = "- " .. result .. "\n" end
       if parent_tag_name == "ol" then
         local siblings = self:filter_tag_children(parent_node)
@@ -295,7 +321,6 @@ function transpiler:eval_child(node, parent_node)
   local result = self:eval(node)
   local tag_name = self:get_node_tag_name(node)
   local sibling = node:next_named_sibling()
-  local parent_tag = self:get_node_tag_name(parent_node)
   local attributes = self:get_node_attributes(parent_node)
 
   -- checks if there should be additional spaces/characters between two elements
@@ -305,7 +330,7 @@ function transpiler:eval_child(node, parent_node)
 
     -- The <pre> HTML element represents preformatted text
     -- which is to be presented exactly as written in the HTML file
-    if parent_tag == "pre" or attributes.class == "_rfc-pre" then
+    if self:has_parent_tag(node, "pre") or attributes.class == "_rfc-pre" then
       local row, col = c_row_end, c_col_end
       while row ~= s_row_start or col ~= s_col_start do
         local char = self:get_text_range(row, col, row, col + 1)

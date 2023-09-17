@@ -277,7 +277,7 @@ function transpiler:eval(node)
       result = "\n```" .. attributes["data-language"] .. "\n" .. result .. "\n```\n"
     elseif tag_name == "pre" and attributes["class"] then
       local language = attributes["class"]:match("language%-(.+)")
-      result = "\n```" .. language .. "\n" .. result .. "\n```\n"
+      result = "\n```" .. (language or "") .. "\n" .. result .. "\n```\n"
     elseif tag_name == "abbr" then
       result = string.format("%s(%s)", result, attributes.title)
     elseif tag_name == "iframe" then

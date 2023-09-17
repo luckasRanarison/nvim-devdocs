@@ -203,6 +203,8 @@ M.filter_doc = function(lines, pattern)
     if found then table.insert(filtered_lines, line) end
   end
 
+  if not found then return lines end
+
   return filtered_lines
 end
 

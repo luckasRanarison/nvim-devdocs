@@ -180,6 +180,7 @@ M.get_all_entries = function()
   return entries
 end
 
+-- if we have a pattern to search for, only consider lines after the pattern
 M.filter_doc = function(lines, pattern)
   if not pattern then return lines end
 
@@ -188,16 +189,17 @@ M.filter_doc = function(lines, pattern)
 
   local filtered_lines = {}
   local found = false
-  local search_pattern = create_pattern(pattern)
+  local pattern_lines = vim.split(pattern, "\n")
+  local search_pattern = create_pattern(pattern_lines[1]) -- only search the first line
   local split = vim.split(pattern, " ")
   local header = split[1]
   local top_header = header and header:sub(1, #header - 1)
 
   for _, line in ipairs(lines) do
-    if found and header then
+    if found then
       local line_split = vim.split(line, " ")
       local first = line_split[1]
-      if first and first == header or first == top_header then break end
+      if first == header or first == top_header then break end
     end
     if line:match(search_pattern) then found = true end
     if found then table.insert(filtered_lines, line) end

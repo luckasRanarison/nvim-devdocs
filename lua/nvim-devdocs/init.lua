@@ -62,6 +62,16 @@ M.update_all = function()
   end
 end
 
+M.keywordprg = function(args)
+  local keyword = args.fargs[1]
+
+  if keyword then
+    operations.keywordprg(keyword)
+  else
+    notify.log("No keyword provided")
+  end
+end
+
 M.setup = function(opts)
   config.setup(opts)
 
@@ -78,6 +88,7 @@ M.setup = function(opts)
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenCurrent", function() M.open_doc_current_file() end, {})
   cmd("DevdocsOpenCurrentFloat", function() M.open_doc_current_file(true) end, {})
+  cmd("DevdocsKeywordprg", M.keywordprg, { nargs = "?" })
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
 end

@@ -180,6 +180,20 @@ M.get_all_entries = function()
   return entries
 end
 
+M.read_entry = function(entry, callback)
+  local splited_path = vim.split(entry.path, ",")
+  local file = splited_path[1]
+  local file_path = DOCS_DIR:joinpath(entry.alias, file .. ".md")
+
+  file_path:_read_async(vim.schedule_wrap(function(content)
+    local pattern = splited_path[2]
+    local lines = vim.split(content, "\n")
+    local filtered_lines = M.filter_doc(lines, pattern)
+
+    callback(filtered_lines)
+  end))
+end
+
 -- if we have a pattern to search for, only consider lines after the pattern
 M.filter_doc = function(lines, pattern)
   if not pattern then return lines end
@@ -245,6 +259,7 @@ M.open = function(entry, bufnr, float)
 
     float_opts.row = plugin_config.row or row
     float_opts.col = plugin_config.col or col
+    float_opts.zindex = 10
 
     local win = nil
     local last_win = state.get("last_win")
@@ -271,8 +286,35 @@ M.open = function(entry, bufnr, float)
     vim.bo[bufnr].ft = "markdown"
   end
 
+  vim.bo[bufnr].keywordprg = ":DevdocsKeywordprg"
+
   config.set_keymaps(bufnr, entry)
   plugin_config.after_open(bufnr)
+end
+
+M.keywordprg = function(keyword)
+  local alias = state.get("current_doc")
+  local float = state.get("last_mode") == "float"
+  local bufnr = state.get("last_bufnr")
+  local entries = M.get_entries(alias)
+  local entry
+
+  local function callback(filtered_lines)
+    vim.bo[bufnr].modifiable = true
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, filtered_lines)
+    vim.bo[bufnr].modifiable = false
+
+    M.open(entry, bufnr, float)
+  end
+
+  for _, value in pairs(entries or {}) do
+    if value.name == keyword or value.link == keyword then
+      entry = value
+      M.read_entry(entry, callback)
+    end
+  end
+
+  if not entry then notify.log("No documentation found for " .. keyword) end
 end
 
 return M

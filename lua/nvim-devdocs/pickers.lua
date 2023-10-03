@@ -50,16 +50,9 @@ local doc_previewer = previewers.new_buffer_previewer({
   title = "Preview",
   keep_last_buf = true,
   define_preview = function(self, entry)
-    local splited_path = vim.split(entry.value.path, ",")
-    local file = splited_path[1]
-    local file_path = DOCS_DIR:joinpath(entry.value.alias, file .. ".md")
     local bufnr = self.state.bufnr
-    local pattern = splited_path[2]
 
-    file_path:_read_async(vim.schedule_wrap(function(content)
-      local lines = vim.split(content, "\n")
-      local filtered_lines = operations.filter_doc(lines, pattern)
-
+    operations.read_entry(entry.value, function(filtered_lines)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 
       if plugin_config.previewer_cmd and plugin_config.picker_cmd then
@@ -68,13 +61,12 @@ local doc_previewer = previewers.new_buffer_previewer({
       else
         vim.bo[bufnr].ft = "markdown"
       end
-    end))
+    end)
   end,
 })
 
-local open_doc = function(float)
+local open_doc = function(selection, float)
   local bufnr = nil
-  local selection = action_state.get_selected_entry()
 
   if plugin_config.picker_cmd then
     bufnr = vim.api.nvim_create_buf(false, true)
@@ -84,6 +76,8 @@ local open_doc = function(float)
     bufnr = state.get_global_key("last_preview_bufnr")
   end
 
+  plugin_state.set("last_bufnr", bufnr)
+  plugin_state.set("last_mode", float and "float" or "normal")
   operations.open(selection.value, bufnr, float)
 end
 
@@ -163,7 +157,14 @@ M.open_picker = function(entries, float)
     attach_mappings = function()
       actions.select_default:replace(function(prompt_bufnr)
         actions.close(prompt_bufnr)
-        open_doc(float)
+
+        local selection = action_state.get_selected_entry()
+        local name = selection.value.name
+        local match = name:match("%[([^%]]+)%]")
+
+        if match then plugin_state.set("current_doc", match) end
+
+        open_doc(selection, float)
       end)
       return true
     end,
@@ -178,6 +179,7 @@ M.open_picker_alias = function(alias, float)
   if not entries then
     notify.log_err(alias .. " documentation is not installed")
   else
+    plugin_state.set("current_doc", alias)
     M.open_picker(entries, float)
   end
 end

@@ -10,6 +10,18 @@ Using [glow](https://github.com/charmbracelet/glow) for rendering markdown:
 
 ![nvim-devdocs with glow](./.github/preview-glow.png)
 
+## Features
+
+- Offline usage.
+
+- Search using Telescope.
+
+- Markdown rendering using custom commands.
+
+- Open in browser.
+
+- Internal search using the `K` key (see `:h K`).
+
 ## Installation
 
 Lazy:

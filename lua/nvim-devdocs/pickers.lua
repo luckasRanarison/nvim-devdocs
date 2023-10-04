@@ -76,7 +76,6 @@ local open_doc = function(selection, float)
     bufnr = state.get_global_key("last_preview_bufnr")
   end
 
-  plugin_state.set("last_bufnr", bufnr)
   plugin_state.set("last_mode", float and "float" or "normal")
   operations.open(selection.value, bufnr, float)
 end

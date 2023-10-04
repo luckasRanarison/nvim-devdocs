@@ -295,7 +295,7 @@ end
 M.keywordprg = function(keyword)
   local alias = state.get("current_doc")
   local float = state.get("last_mode") == "float"
-  local bufnr = state.get("last_bufnr")
+  local bufnr = vim.api.nvim_create_buf(false, false)
   local entries = M.get_entries(alias)
   local entry
 

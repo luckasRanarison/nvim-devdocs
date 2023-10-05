@@ -24,7 +24,7 @@ local tag_mappings = {
   span = {},
   nav = {},
   header = {},
-  div = {},
+  div = { left = "\n", right = "\n" },
   section = { right = "\n" },
   p = { right = "\n\n" },
   ul = { right = "\n" },
@@ -86,6 +86,9 @@ local inline_tags = {
 
 local skipable_tags = {
   "input",
+  "use",
+  "svg",
+  "button",
 
   -- exceptions, (parent) table -> child
   "tr",
@@ -336,14 +339,36 @@ function transpiler:eval_child(node, parent_node)
 
   -- checks if there should be additional spaces/characters between two elements
   if sibling then
-    local c_row_end, c_col_end = node:end_()
-    local s_row_start, s_col_start = sibling:start()
+    local start_row, start_col = node:end_()
+    local target_row, target_col = sibling:start()
 
     -- The <pre> HTML element represents preformatted text
     -- which is to be presented exactly as written in the HTML file
     if self:has_parent_tag(node, "pre") or attributes.class == "_rfc-pre" then
-      local row, col = c_row_end, c_col_end
-      while row ~= s_row_start or col ~= s_col_start do
+      local child = sibling:named_child()
+
+      -- skip all the tags to get the actual text offset, see #56
+      while child do
+        local child_sibling = child:next_named_sibling()
+        if child:type() == "start_tag" and child_sibling then
+          local c_row, c_col = child:end_()
+          local s_row, s_col = child_sibling:start()
+
+          if c_row == s_row and c_col == s_col then
+            child = child_sibling:named_child()
+          else
+            start_row, start_col = c_row, c_col
+            target_row, target_col = s_row, s_col
+
+            if child_sibling:type() == "text" or "entity" then break end
+          end
+        else
+          break
+        end
+      end
+
+      local row, col = start_row, start_col
+      while row ~= target_row or col ~= target_col do
         local char = self:get_text_range(row, col, row, col + 1)
         if char ~= "" then
           result = result .. char
@@ -355,7 +380,7 @@ function transpiler:eval_child(node, parent_node)
       end
     else
       local is_inline = is_inline_tag(tag_name) or not tag_name -- is text
-      if is_inline and c_col_end ~= s_col_start then result = result .. " " end
+      if is_inline and start_col ~= target_col then result = result .. " " end
     end
   end
 

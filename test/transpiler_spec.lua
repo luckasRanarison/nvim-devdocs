@@ -65,6 +65,25 @@ console.log("Hello World")
 ]],
     },
     {
+      desc = "<pre> with tag children",
+      input =
+      [[<pre class="language-svelte"><code><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span><span class="token punctuation">&gt;</span></span><span class="token script"><span class="token language-javascript">
+  <span class="token keyword">import</span> <span class="token punctuation">{</span> getAllContexts <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'svelte'</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">const</span> contexts <span class="token operator">=</span> <span class="token function">getAllContexts</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span></code><button type="button" class="_pre-clip" title="Copy to clipboard" aria-label="Copy to clipboard"><svg><use xlink:href="#icon-copy"></use></svg></button></pre>]],
+      expected = [[
+
+```svelte
+<script>
+  import { getAllContexts } from 'svelte';
+
+  const contexts = getAllContexts();
+</script>
+```
+]],
+    },
+    {
       desc = "<table>",
       input = [[
         <table>

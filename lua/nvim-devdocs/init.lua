@@ -75,7 +75,7 @@ end
 M.setup = function(opts)
   config.setup(opts)
 
-  local ensure_installed = config.get().ensure_installed
+  local ensure_installed = config.options.ensure_installed
 
   vim.defer_fn(function() operations.install_args(ensure_installed) end, 3000)
 

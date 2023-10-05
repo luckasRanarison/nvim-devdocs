@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil, param-type-mismatch
 local M = {}
 
 local normalize_html = function(str)
@@ -105,10 +106,11 @@ local is_inline_tag = function(tag_name) return vim.tbl_contains(inline_tags, ta
 local is_skipable_tag = function(tag_name) return vim.tbl_contains(skipable_tags, tag_name) end
 local is_monospace_tag = function(tag_name) return vim.tbl_contains(monospace_tags, tag_name) end
 
-----------------------------------------------------------------
-
 local transpiler = {}
 
+---HTML to Markdown transpiler
+---@param source string the string to convert
+---@param section_map table<string, string> a map of the doc sections for indexing
 function transpiler:new(source, section_map)
   local new = {
     parser = vim.treesitter.get_string_parser(source, "html"),
@@ -123,6 +125,7 @@ function transpiler:new(source, section_map)
   return setmetatable(new, self)
 end
 
+---Returns the text at a given range, zero based index
 function transpiler:get_text_range(row_start, col_start, row_end, col_end)
   local extracted_lines = {}
 
@@ -144,6 +147,7 @@ function transpiler:get_text_range(row_start, col_start, row_end, col_end)
 end
 
 ---@param node TSNode
+---@return string
 function transpiler:get_node_text(node)
   if not node then return "" end
 
@@ -170,6 +174,7 @@ function transpiler:get_node_tag_name(node)
 end
 
 ---@param node TSNode
+---@param tag_name boolean
 function transpiler:has_parent_tag(node, tag_name)
   local current = node:parent()
 
@@ -183,6 +188,7 @@ function transpiler:has_parent_tag(node, tag_name)
 end
 
 ---@param node TSNode
+---@return table<string, string>
 function transpiler:get_node_attributes(node)
   if not node then return {} end
 
@@ -211,6 +217,7 @@ function transpiler:get_node_attributes(node)
   return attributes
 end
 
+---Removes start and end tag
 ---@param node TSNode
 ---@return TSNode[]
 function transpiler:filter_tag_children(node)
@@ -223,6 +230,7 @@ function transpiler:filter_tag_children(node)
   return filtered
 end
 
+---Converts HTML to Markdown
 ---@return string, table<string, string>
 function transpiler:transpile()
   self.parser:for_each_tree(function(tree)
@@ -240,7 +248,9 @@ function transpiler:transpile()
   return self.result, self.sections
 end
 
+---Returns the Markdown representation of a node
 ---@param node TSNode
+---@return string
 function transpiler:eval(node)
   local result = ""
   local node_type = node:type()
@@ -265,7 +275,7 @@ function transpiler:eval(node)
     end
 
     if is_skipable_tag(tag_name) then return "" end
-    if is_monospace_tag(tag_name) and self:has_parent_tag(node, "pre") then return result end
+    if is_monospace_tag(tag_name) and self:has_parent_tag(node, "pre") then return result end -- avoid nested code blocks
 
     if tag_name == "a" then
       result = string.format("[%s](%s)", result, attributes.href)
@@ -306,7 +316,7 @@ function transpiler:eval(node)
     end
   end
 
-  -- use the markdown text for indexing docs
+  -- use the Markdown text for indexing docs in the index.json file
   local id = attributes.id
 
   if id and self.section_map and vim.tbl_contains(self.section_map, id) then
@@ -317,6 +327,7 @@ function transpiler:eval(node)
 end
 
 ---@param node TSNode
+---@return string
 function transpiler:eval_child(node, parent_node)
   local result = self:eval(node)
   local tag_name = self:get_node_tag_name(node)
@@ -351,7 +362,9 @@ function transpiler:eval_child(node, parent_node)
   return result
 end
 
+---Converts <table> tag, table nodes are evaluated from parent to child
 ---@param node TSNode
+---@return string
 function transpiler:eval_table(node)
   local result = ""
   local children = self:filter_tag_children(node)
@@ -369,8 +382,8 @@ function transpiler:eval_table(node)
   end
 
   local max_col_len_map = {}
-  local result_map = {}
-  local colspan_map = {}
+  local result_map = {} -- the converted text of each col
+  local colspan_map = {} -- colspan attribute
 
   for i, tr in ipairs(tr_nodes) do
     local tr_children = self:filter_tag_children(tr)
@@ -450,8 +463,9 @@ function transpiler:eval_table(node)
   return result
 end
 
-----------------------------------------------------------------
-
+---Converts a `RegisteryEntry` to yaml
+---@param entry RegisteryEntry
+---@return string
 M.to_yaml = function(entry)
   local lines = {}
 
@@ -469,6 +483,9 @@ M.to_yaml = function(entry)
   return table.concat(lines, "\n")
 end
 
+---@param html string
+---@param section_map table<string, string>
+---@return string, table<string, string>
 M.html_to_md = function(html, section_map)
   local t = transpiler:new(html, section_map)
   return t:transpile()

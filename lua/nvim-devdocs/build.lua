@@ -1,6 +1,9 @@
 local notify = require("nvim-devdocs.notify")
 local transpiler = require("nvim-devdocs.transpiler")
 
+---@param entry RegisteryEntry
+---@param index any
+---@param docs table<string, string>
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
   local current_doc_dir = DOCS_DIR:joinpath(alias)

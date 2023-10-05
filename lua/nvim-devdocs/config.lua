@@ -2,7 +2,8 @@ local M = {}
 
 local path = require("plenary.path")
 
-local config = {
+---@class nvim_devdocs.Config
+local default = {
   dir_path = vim.fn.stdpath("data") .. "/devdocs",
   telescope = {},
   float_win = {
@@ -25,27 +26,26 @@ local config = {
   after_open = function(bufnr) end,
 }
 
-M.get = function() return config end
+---@class nvim_devdocs.Config
+M.options = {}
 
 M.setup = function(new_config)
-  if new_config ~= nil then
-    for key, value in pairs(new_config) do
-      config[key] = value
-    end
-  end
+  M.options = vim.tbl_deep_extend("force", default, new_config or {})
 
-  DATA_DIR = path:new(config.dir_path)
+  DATA_DIR = path:new(default.dir_path)
   DOCS_DIR = DATA_DIR:joinpath("docs")
   INDEX_PATH = DATA_DIR:joinpath("index.json")
   LOCK_PATH = DATA_DIR:joinpath("docs-lock.json")
   REGISTERY_PATH = DATA_DIR:joinpath("registery.json")
 
-  return config
+  return default
 end
 
+---@param bufnr number
+---@param entry DocEntry
 M.set_keymaps = function(bufnr, entry)
   local slug = entry.alias:gsub("-", "~")
-  local keymaps = config.mappings
+  local keymaps = M.options.mappings
   local set_buf_keymap = function(key, action, description)
     vim.keymap.set("n", key, action, { buffer = bufnr, desc = description })
   end

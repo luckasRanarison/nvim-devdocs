@@ -13,10 +13,10 @@ local notify = require("nvim-devdocs.notify")
 local operations = require("nvim-devdocs.operations")
 local transpiler = require("nvim-devdocs.transpiler")
 local plugin_state = require("nvim-devdocs.state")
-local plugin_config = require("nvim-devdocs.config").get()
+local plugin_config = require("nvim-devdocs.config")
 
-local new_docs_picker = function(prompt, entries, previwer, attach)
-  return pickers.new(plugin_config.telescope, {
+local new_docs_picker = function(prompt, entries, previewer, attach)
+  return pickers.new(plugin_config.options.telescope, {
     prompt_title = prompt,
     finder = finders.new_table({
       results = entries,
@@ -28,8 +28,8 @@ local new_docs_picker = function(prompt, entries, previwer, attach)
         }
       end,
     }),
-    sorter = config.generic_sorter(plugin_config.telescope),
-    previewer = previwer,
+    sorter = config.generic_sorter(plugin_config.options.telescope),
+    previewer = previewer,
     attach_mappings = attach,
   })
 end
@@ -55,7 +55,7 @@ local doc_previewer = previewers.new_buffer_previewer({
     operations.read_entry(entry.value, function(filtered_lines)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 
-      if plugin_config.previewer_cmd and plugin_config.picker_cmd then
+      if plugin_config.options.previewer_cmd and plugin_config.options.picker_cmd then
         plugin_state.set("preview_lines", filtered_lines)
         operations.render_cmd(bufnr, true)
       else
@@ -68,7 +68,7 @@ local doc_previewer = previewers.new_buffer_previewer({
 local open_doc = function(selection, float)
   local bufnr = nil
 
-  if plugin_config.picker_cmd then
+  if plugin_config.options.picker_cmd then
     bufnr = vim.api.nvim_create_buf(false, true)
     local lines = plugin_state.get("preview_lines")
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
@@ -138,8 +138,10 @@ M.update_picker = function()
   picker:find()
 end
 
+---@param entries DocEntry[]
+---@param float? boolean
 M.open_picker = function(entries, float)
-  local picker = pickers.new(plugin_config.telescope, {
+  local picker = pickers.new(plugin_config.options.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
       results = entries,
@@ -151,7 +153,7 @@ M.open_picker = function(entries, float)
         }
       end,
     }),
-    sorter = config.generic_sorter(plugin_config.telescope),
+    sorter = config.generic_sorter(plugin_config.options.telescope),
     previewer = doc_previewer,
     attach_mappings = function()
       actions.select_default:replace(function(prompt_bufnr)
@@ -172,6 +174,8 @@ M.open_picker = function(entries, float)
   picker:find()
 end
 
+---@param alias string
+---@param float? boolean
 M.open_picker_alias = function(alias, float)
   local entries = operations.get_entries(alias)
 

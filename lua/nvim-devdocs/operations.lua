@@ -12,8 +12,6 @@ local build_docs = require("nvim-devdocs.build")
 local devdocs_site_url = "https://devdocs.io"
 local devdocs_cdn_url = "https://documents.devdocs.io"
 
-local plugin_config = config.get()
-
 M.fetch = function()
   notify.log("Fetching DevDocs registery...")
 
@@ -32,6 +30,9 @@ M.fetch = function()
   })
 end
 
+---@param entry RegisteryEntry
+---@param verbose? boolean
+---@param is_update? boolean
 M.install = function(entry, verbose, is_update)
   if not REGISTERY_PATH:exists() then
     if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
@@ -89,6 +90,9 @@ M.install = function(entry, verbose, is_update)
   end
 end
 
+---@param args string[]
+---@param verbose? boolean
+---@param is_update? boolean
 M.install_args = function(args, verbose, is_update)
   if not REGISTERY_PATH:exists() then
     if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
@@ -122,6 +126,7 @@ M.install_args = function(args, verbose, is_update)
   end
 end
 
+---@param alias string
 M.uninstall = function(alias)
   local installed = list.get_installed_alias()
 
@@ -143,6 +148,8 @@ M.uninstall = function(alias)
   end
 end
 
+---@param alias string
+---@return DocEntry[] | nil
 M.get_entries = function(alias)
   local installed = list.get_installed_alias()
   local is_installed = vim.tbl_contains(installed, alias)
@@ -159,6 +166,7 @@ M.get_entries = function(alias)
   return entries
 end
 
+---@return DocEntry[]
 M.get_all_entries = function()
   if not INDEX_PATH:exists() then return {} end
 
@@ -180,6 +188,8 @@ M.get_all_entries = function()
   return entries
 end
 
+---@param entry DocEntry
+---@param callback function
 M.read_entry = function(entry, callback)
   local splited_path = vim.split(entry.path, ",")
   local file = splited_path[1]
@@ -194,7 +204,10 @@ M.read_entry = function(entry, callback)
   end))
 end
 
--- if we have a pattern to search for, only consider lines after the pattern
+---if we have a pattern to search for, only consider lines after the pattern
+---@param lines string[]
+---@param pattern? string
+---@return string[]
 M.filter_doc = function(lines, pattern)
   if not pattern then return lines end
 
@@ -224,14 +237,16 @@ M.filter_doc = function(lines, pattern)
   return filtered_lines
 end
 
+---@param bufnr number
+---@param is_picker? boolean
 M.render_cmd = function(bufnr, is_picker)
-  vim.bo[bufnr].ft = plugin_config.previewer_cmd
+  vim.bo[bufnr].ft = config.options.previewer_cmd
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local chan = vim.api.nvim_open_term(bufnr, {})
-  local args = is_picker and plugin_config.picker_cmd_args or plugin_config.cmd_args
+  local args = is_picker and config.options.picker_cmd_args or config.options.cmd_args
   local previewer = job:new({
-    command = plugin_config.previewer_cmd,
+    command = config.options.previewer_cmd,
     args = args,
     on_stdout = vim.schedule_wrap(function(_, data)
       if not data then return end
@@ -246,6 +261,9 @@ M.render_cmd = function(bufnr, is_picker)
   previewer:start()
 end
 
+---@param entry DocEntry
+---@param bufnr number
+---@param float boolean
 M.open = function(entry, bufnr, float)
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 
@@ -253,12 +271,12 @@ M.open = function(entry, bufnr, float)
     vim.api.nvim_set_current_buf(bufnr)
   else
     local ui = vim.api.nvim_list_uis()[1]
-    local row = (ui.height - plugin_config.float_win.height) * 0.5
-    local col = (ui.width - plugin_config.float_win.width) * 0.5
-    local float_opts = plugin_config.float_win
+    local row = (ui.height - config.options.float_win.height) * 0.5
+    local col = (ui.width - config.options.float_win.width) * 0.5
+    local float_opts = config.options.float_win
 
-    float_opts.row = plugin_config.row or row
-    float_opts.col = plugin_config.col or col
+    float_opts.row = config.options.float_win.row or row
+    float_opts.col = config.options.float_win.col or col
     float_opts.zindex = 10
 
     local win = nil
@@ -272,15 +290,15 @@ M.open = function(entry, bufnr, float)
       state.set("last_win", win)
     end
 
-    vim.wo[win].wrap = plugin_config.wrap
-    vim.wo[win].linebreak = plugin_config.wrap
+    vim.wo[win].wrap = config.options.wrap
+    vim.wo[win].linebreak = config.options.wrap
     vim.wo[win].nu = false
     vim.wo[win].relativenumber = false
   end
 
-  local ignore = vim.tbl_contains(plugin_config.cmd_ignore, entry.alias)
+  local ignore = vim.tbl_contains(config.options.cmd_ignore, entry.alias)
 
-  if plugin_config.previewer_cmd and not ignore then
+  if config.options.previewer_cmd and not ignore then
     M.render_cmd(bufnr)
   else
     vim.bo[bufnr].ft = "markdown"
@@ -289,9 +307,10 @@ M.open = function(entry, bufnr, float)
   vim.bo[bufnr].keywordprg = ":DevdocsKeywordprg"
 
   config.set_keymaps(bufnr, entry)
-  plugin_config.after_open(bufnr)
+  config.options.after_open(bufnr)
 end
 
+---@param keyword string
 M.keywordprg = function(keyword)
   local alias = state.get("current_doc")
   local float = state.get("last_mode") == "float"

@@ -2,6 +2,8 @@ local M = {}
 
 local list = require("nvim-devdocs.list")
 
+---@param arg_lead string
+---@return string[]
 M.get_non_installed = function(arg_lead)
   if not REGISTERY_PATH:exists() then return {} end
 
@@ -19,6 +21,8 @@ M.get_non_installed = function(arg_lead)
   return args
 end
 
+---@param arg_lead string
+---@return string[]
 M.get_installed = function(arg_lead)
   local installed = list.get_installed_alias()
   local args = vim.tbl_filter(function(entry)
@@ -30,6 +34,8 @@ M.get_installed = function(arg_lead)
   return args
 end
 
+---@param arg_lead string
+---@return string[]
 M.get_updatable = function(arg_lead)
   local updatable = list.get_updatable()
   local args = vim.tbl_filter(function(entry)

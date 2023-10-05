@@ -2,6 +2,7 @@ local M = {}
 
 local notify = require("nvim-devdocs.notify")
 
+---@return string[]
 M.get_installed_alias = function()
   if not LOCK_PATH:exists() then return {} end
 
@@ -12,6 +13,7 @@ M.get_installed_alias = function()
   return installed
 end
 
+---@return RegisteryEntry[] | nil
 M.get_installed_entry = function()
   if not REGISTERY_PATH:exists() then
     notify.log_err("Devdocs registery not found, please run :DevdocsFetch")
@@ -32,6 +34,7 @@ M.get_installed_entry = function()
   return results
 end
 
+---@return string[]
 M.get_updatable = function()
   if not REGISTERY_PATH:exists() or not LOCK_PATH:exists() then return {} end
 

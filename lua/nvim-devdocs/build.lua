@@ -17,6 +17,8 @@ local function build_docs(entry, index, docs)
 
   local section_map = {}
   local path_map = {}
+  local section_lists = {}
+  local section_lists_index={}
 
   for _, index_entry in pairs(index.entries) do
     local splited = vim.split(index_entry.path, "#")
@@ -31,7 +33,13 @@ local function build_docs(entry, index, docs)
 
   for key, doc in pairs(docs) do
     local sections = section_map[key]
-    local markdown, md_sections = transpiler.html_to_md(doc, sections)
+    local markdown, md_sections, section_list = transpiler.html_to_md(doc, sections)
+    section_lists[key] = section_list
+    section_lists_index[key] = {}
+    for k,v in pairs(section_list) do
+      section_lists_index[key][v]=k
+    end
+
     local file_path = current_doc_dir:joinpath(tostring(count) .. ".md")
 
     for id, md_path in pairs(md_sections) do
@@ -45,7 +53,17 @@ local function build_docs(entry, index, docs)
 
   for i, index_entry in ipairs(index.entries) do
     local main = vim.split(index_entry.path, "#")[1]
+    local section_list = section_lists[main]
     index.entries[i].link = index.entries[i].path
+    local path_map_val = path_map[index_entry.path]
+    if path_map_val ~= nil then
+      local id = vim.split(index_entry.path, "#")[2]
+      local section_list_index = section_lists_index[main][id]
+      if section_list_index ~= nil and section_list_index < #section_list then
+        local next_id = section_list[section_list_index+1]
+        index.entries[i].succ_path = path_map[main .. "#" .. next_id]
+      end
+    end
     index.entries[i].path = path_map[index_entry.path] or path_map[main]
   end
 

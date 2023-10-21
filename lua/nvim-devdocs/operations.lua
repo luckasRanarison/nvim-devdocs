@@ -180,6 +180,7 @@ M.get_all_entries = function()
         alias = alias,
         path = doc_entry.path,
         link = doc_entry.link,
+        succ_path = doc_entry.succ_path
       }
       table.insert(entries, entry)
     end
@@ -197,18 +198,23 @@ M.read_entry = function(entry, callback)
 
   file_path:_read_async(vim.schedule_wrap(function(content)
     local pattern = splited_path[2]
+    local next_pattern = nil
+    if entry.succ_path ~= nil then
+      next_pattern = vim.split(entry.succ_path, ",")[2]
+    end
     local lines = vim.split(content, "\n")
-    local filtered_lines = M.filter_doc(lines, pattern)
+    local filtered_lines = M.filter_doc(lines, pattern, next_pattern)
 
     callback(filtered_lines)
   end))
 end
 
----if we have a pattern to search for, only consider lines after the pattern
+---if we have a pattern to search for, only consider lines between the pattern markers
 ---@param lines string[]
 ---@param pattern? string
+---@param pattern_end? string
 ---@return string[]
-M.filter_doc = function(lines, pattern)
+M.filter_doc = function(lines, pattern, pattern_end)
   if not pattern then return lines end
 
   -- https://stackoverflow.com/a/34953646/516188
@@ -218,15 +224,13 @@ M.filter_doc = function(lines, pattern)
   local found = false
   local pattern_lines = vim.split(pattern, "\n")
   local search_pattern = create_pattern(pattern_lines[1]) -- only search the first line
+  local pattern_end_lines = pattern_end and vim.split(pattern_end, "\n") or {""}
+  local search_pattern_end = create_pattern(pattern_end_lines[1]) -- only search the first line
   local split = vim.split(pattern, " ")
-  local header = split[1]
-  local top_header = header and header:sub(1, #header - 1)
 
   for _, line in ipairs(lines) do
     if found then
-      local line_split = vim.split(line, " ")
-      local first = line_split[1]
-      if first == header or first == top_header then break end
+      if line:match(search_pattern_end) then break end
     end
     if line:match(search_pattern) then found = true end
     if found then table.insert(filtered_lines, line) end

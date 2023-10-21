@@ -121,6 +121,7 @@ function transpiler:new(source, section_map)
     result = "",
     section_map = section_map,
     sections = {},
+    section_list = {},
   }
   new.parser:parse()
   self.__index = self
@@ -248,7 +249,7 @@ function transpiler:transpile()
 
   self.result = self.result:gsub("\n\n\n+", "\n\n")
 
-  return self.result, self.sections
+  return self.result, self.sections, self.section_list
 end
 
 ---Returns the Markdown representation of a node
@@ -324,6 +325,7 @@ function transpiler:eval(node)
 
   if id and self.section_map and vim.tbl_contains(self.section_map, id) then
     self.sections[id] = vim.trim(result)
+    table.insert(self.section_list, id)
   end
 
   return result

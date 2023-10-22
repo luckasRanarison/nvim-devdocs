@@ -7,6 +7,8 @@ local transpiler = require("nvim-devdocs.transpiler")
 local function build_docs(entry, index, docs)
   local alias = entry.slug:gsub("~", "-")
   local current_doc_dir = DOCS_DIR:joinpath(alias)
+  local sort_lookup = {}
+  local sort_lookup_last_index = 1
 
   notify.log("Building " .. alias .. " documentation...")
 
@@ -34,8 +36,10 @@ local function build_docs(entry, index, docs)
     local markdown, md_sections = transpiler.html_to_md(doc, sections)
     local file_path = current_doc_dir:joinpath(tostring(count) .. ".md")
 
-    for id, md_path in pairs(md_sections) do
-      path_map[key .. "#" .. id] = count .. "," .. md_path
+    for _, section in ipairs(md_sections) do
+      path_map[key .. "#" .. section.id] = count .. "," .. section.md_path
+      sort_lookup[key .. "#" .. section.id] = sort_lookup_last_index
+      sort_lookup_last_index = sort_lookup_last_index + 1
     end
 
     path_map[key] = tostring(count)
@@ -43,6 +47,19 @@ local function build_docs(entry, index, docs)
     count = count + 1
   end
 
+  table.sort(index.entries, function(a, b)
+    local index_a = sort_lookup[a.path]
+    local index_b = sort_lookup[b.path]
+    if index_a == nil and index_b == nil then
+      return false
+    elseif index_a == nil then
+      return true
+    elseif index_b == nil then
+      return false
+    else
+      return index_a < index_b
+    end
+  end)
   for i, index_entry in ipairs(index.entries) do
     local main = vim.split(index_entry.path, "#")[1]
     index.entries[i].link = index.entries[i].path

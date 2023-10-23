@@ -174,11 +174,17 @@ M.get_all_entries = function()
   local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
 
   for alias, index in pairs(index_parsed) do
-    for _, doc_entry in ipairs(index.entries) do
+    local entries_count = #index.entries
+    for idx, doc_entry in ipairs(index.entries) do
+      local next_path = nil
+      if idx < entries_count then
+        next_path = index.entries[idx+1].path
+      end
       local entry = {
         name = string.format("[%s] %s", alias, doc_entry.name),
         alias = alias,
         path = doc_entry.path,
+        next_path = next_path,
         link = doc_entry.link,
       }
       table.insert(entries, entry)
@@ -197,8 +203,12 @@ M.read_entry = function(entry, callback)
 
   file_path:_read_async(vim.schedule_wrap(function(content)
     local pattern = splited_path[2]
+    local next_pattern = nil
+    if entry.next_path ~= nil then
+      next_pattern = vim.split(entry.next_path, ",")[2]
+    end
     local lines = vim.split(content, "\n")
-    local filtered_lines = M.filter_doc(lines, pattern)
+    local filtered_lines = M.filter_doc(lines, pattern, next_pattern)
 
     callback(filtered_lines)
   end))
@@ -207,8 +217,9 @@ end
 ---if we have a pattern to search for, only consider lines after the pattern
 ---@param lines string[]
 ---@param pattern? string
+---@param next_pattern? string
 ---@return string[]
-M.filter_doc = function(lines, pattern)
+M.filter_doc = function(lines, pattern, next_pattern)
   if not pattern then return lines end
 
   -- https://stackoverflow.com/a/34953646/516188
@@ -218,15 +229,15 @@ M.filter_doc = function(lines, pattern)
   local found = false
   local pattern_lines = vim.split(pattern, "\n")
   local search_pattern = create_pattern(pattern_lines[1]) -- only search the first line
-  local split = vim.split(pattern, " ")
-  local header = split[1]
-  local top_header = header and header:sub(1, #header - 1)
+  local next_search_pattern = nil
+  if next_pattern then
+    local next_pattern_lines = vim.split(next_pattern, "\n")
+    next_search_pattern = create_pattern(next_pattern_lines[1]) -- only search the first line
+  end
 
   for _, line in ipairs(lines) do
-    if found then
-      local line_split = vim.split(line, " ")
-      local first = line_split[1]
-      if first == header or first == top_header then break end
+    if found and next_search_pattern then
+      if line:match(next_search_pattern) then break end
     end
     if line:match(search_pattern) then found = true end
     if found then table.insert(filtered_lines, line) end

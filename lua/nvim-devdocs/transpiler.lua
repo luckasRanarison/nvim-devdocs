@@ -323,7 +323,7 @@ function transpiler:eval(node)
   local id = attributes.id
 
   if id and self.section_map and vim.tbl_contains(self.section_map, id) then
-    self.sections[id] = vim.trim(result)
+    table.insert(self.sections, {id = id, md_path = vim.trim(result)})
   end
 
   return result

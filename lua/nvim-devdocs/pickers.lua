@@ -48,7 +48,6 @@ local metadata_previewer = previewers.new_buffer_previewer({
 
 local doc_previewer = previewers.new_buffer_previewer({
   title = "Preview",
-  keep_last_buf = true,
   define_preview = function(self, entry)
     local bufnr = self.state.bufnr
 
@@ -160,12 +159,14 @@ M.open_picker = function(entries, float)
         actions.close(prompt_bufnr)
 
         local selection = action_state.get_selected_entry()
-        local name = selection.value.name
-        local match = name:match("%[([^%]]+)%]")
+        if selection then
+          local name = selection.value.name
+          local match = name:match("%[([^%]]+)%]")
 
-        if match then plugin_state.set("current_doc", match) end
+          if match then plugin_state.set("current_doc", match) end
 
-        open_doc(selection, float)
+          open_doc(selection, float)
+        end
       end)
       return true
     end,

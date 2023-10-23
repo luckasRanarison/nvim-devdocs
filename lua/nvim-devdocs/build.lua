@@ -48,17 +48,9 @@ local function build_docs(entry, index, docs)
   end
 
   table.sort(index.entries, function(a, b)
-    local index_a = sort_lookup[a.path]
-    local index_b = sort_lookup[b.path]
-    if index_a == nil and index_b == nil then
-      return false
-    elseif index_a == nil then
-      return true
-    elseif index_b == nil then
-      return false
-    else
-      return index_a < index_b
-    end
+    local index_a = sort_lookup[a.path] or -1
+    local index_b = sort_lookup[b.path] or -1
+    return index_a < index_b
   end)
   for i, index_entry in ipairs(index.entries) do
     local main = vim.split(index_entry.path, "#")[1]

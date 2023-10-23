@@ -229,11 +229,14 @@ M.filter_doc = function(lines, pattern, next_pattern)
   local found = false
   local pattern_lines = vim.split(pattern, "\n")
   local search_pattern = create_pattern(pattern_lines[1]) -- only search the first line
-  local next_pattern_lines = vim.split(next_pattern, "\n")
-  local next_search_pattern = create_pattern(next_pattern_lines[1]) -- only search the first line
+  local next_search_pattern = nil
+  if next_pattern then
+    local next_pattern_lines = vim.split(next_pattern, "\n")
+    next_search_pattern = create_pattern(next_pattern_lines[1]) -- only search the first line
+  end
 
   for _, line in ipairs(lines) do
-    if found then
+    if found and next_search_pattern then
       if line:match(next_search_pattern) then break end
     end
     if line:match(search_pattern) then found = true end

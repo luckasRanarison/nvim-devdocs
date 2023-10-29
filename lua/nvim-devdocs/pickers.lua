@@ -48,6 +48,7 @@ local metadata_previewer = previewers.new_buffer_previewer({
 
 local doc_previewer = previewers.new_buffer_previewer({
   title = "Preview",
+  keep_last_buf = true,
   define_preview = function(self, entry)
     local bufnr = self.state.bufnr
 

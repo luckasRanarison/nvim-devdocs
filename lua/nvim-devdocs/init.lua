@@ -72,6 +72,15 @@ M.keywordprg = function(args)
   end
 end
 
+M.grep = function(args)
+  if vim.tbl_isempty(args.fargs) then
+    pickers.open_picker_grep("")
+  else
+    local alias = args.fargs[1]
+    pickers.open_picker_grep(alias)
+  end
+end
+
 M.setup = function(opts)
   config.setup(opts)
 
@@ -86,6 +95,7 @@ M.setup = function(opts)
   cmd("DevdocsUninstall", M.uninstall_doc, { nargs = "*", complete = completion.get_installed })
   cmd("DevdocsOpen", M.open_doc, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenFloat", M.open_doc_float, { nargs = "?", complete = completion.get_installed })
+  cmd("DevdocsGrep", M.grep, { nargs = "?", complete = completion.get_installed })
   cmd("DevdocsOpenCurrent", function() M.open_doc_current_file() end, {})
   cmd("DevdocsOpenCurrentFloat", function() M.open_doc_current_file(true) end, {})
   cmd("DevdocsKeywordprg", M.keywordprg, { nargs = "?" })

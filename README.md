@@ -107,6 +107,7 @@ Available commands:
 - `DevdocsOpenFloat`: Open documentation in a floating window, 0 or 1 arg.
 - `DevdocsOpenCurrent`: Open documentation for the current filetype in a normal buffer.
 - `DevdocsOpenCurrentFloat`: Open documentation for the current filetype in a floating window.
+- `DevdocsGrep`: Search in the installed apidocs.
 - `DevdocsUpdate`: Update documentation, 0-n args.
 - `DevdocsUpdateAll`: Update all documentations.
 

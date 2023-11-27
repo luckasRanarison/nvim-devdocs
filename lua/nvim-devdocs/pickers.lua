@@ -176,6 +176,10 @@ M.open_picker = function(entries, float)
   picker:find()
 end
 
+M.open_picker_grep = function(subfolder)
+  require('telescope.builtin').live_grep({cwd=DOCS_DIR:joinpath(subfolder).filename})
+end
+
 ---@param alias string
 ---@param float? boolean
 M.open_picker_alias = function(alias, float)

@@ -1,6 +1,7 @@
 local M = {}
 
 local list = require("nvim-devdocs.list")
+local state = require("nvim-devdocs.state")
 local notify = require("nvim-devdocs.notify")
 local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
@@ -75,6 +76,21 @@ M.update_all = function()
   end
 end
 
+M.toggle = function()
+  local buf = state.get("last_buf")
+  local win = state.get("last_win")
+
+  if not buf then return end
+
+  if win and vim.api.nvim_win_is_valid(win) then
+    vim.api.nvim_win_close(win, true)
+    state.set("last_win", nil)
+  else
+    win = vim.api.nvim_open_win(buf, true, config.get_float_options())
+    state.set("last_win", win)
+  end
+end
+
 M.keywordprg = function(args)
   local keyword = args.fargs[1]
 
@@ -104,6 +120,7 @@ M.setup = function(opts)
   cmd("DevdocsKeywordprg", M.keywordprg, { nargs = "?" })
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
+  cmd("DevdocsToggle", M.toggle, {})
 end
 
 return M

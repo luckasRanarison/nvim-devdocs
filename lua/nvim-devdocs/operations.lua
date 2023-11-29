@@ -268,17 +268,9 @@ M.open = function(entry, bufnr, float)
   if not float then
     vim.api.nvim_set_current_buf(bufnr)
   else
-    local ui = vim.api.nvim_list_uis()[1]
-    local row = (ui.height - config.options.float_win.height) * 0.5
-    local col = (ui.width - config.options.float_win.width) * 0.5
-    local float_opts = config.options.float_win
-
-    float_opts.row = config.options.float_win.row or row
-    float_opts.col = config.options.float_win.col or col
-    float_opts.zindex = 10
-
     local win = nil
     local last_win = state.get("last_win")
+    local float_opts = config.get_float_options()
 
     if last_win and vim.api.nvim_win_is_valid(last_win) then
       win = last_win
@@ -305,6 +297,7 @@ M.open = function(entry, bufnr, float)
 
   vim.bo[bufnr].keywordprg = ":DevdocsKeywordprg"
 
+  state.set("last_buf", bufnr)
   keymaps.set_keymaps(bufnr, entry)
   config.options.after_open(bufnr)
 end

@@ -6,6 +6,7 @@ local path = require("plenary.path")
 local default = {
   dir_path = vim.fn.stdpath("data") .. "/devdocs",
   telescope = {},
+  filetypes = {},
   float_win = {
     relative = "editor",
     height = 25,

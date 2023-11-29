@@ -148,44 +148,34 @@ M.uninstall = function(alias)
   end
 end
 
----@param alias string
+---@param aliases string[]
 ---@return DocEntry[] | nil
-M.get_entries = function(alias)
-  local installed = list.get_installed_alias()
-  local is_installed = vim.tbl_contains(installed, alias)
-
-  if not INDEX_PATH:exists() or not is_installed then return end
-
-  local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
-  local entries = index_parsed[alias].entries
-
-  for key, _ in ipairs(entries) do
-    entries[key].alias = alias
-  end
-
-  return entries
-end
-
----@return DocEntry[]
-M.get_all_entries = function()
-  if not INDEX_PATH:exists() then return {} end
+M.get_entries = function(aliases)
+  if not INDEX_PATH:exists() then return end
 
   local entries = {}
-  local index_parsed = vim.fn.json_decode(INDEX_PATH:read())
+  local index = vim.fn.json_decode(INDEX_PATH:read())
 
-  for alias, index in pairs(index_parsed) do
-    local entries_count = #index.entries
-    for idx, doc_entry in ipairs(index.entries) do
-      local next_path = nil
-      if idx < entries_count then next_path = index.entries[idx + 1].path end
-      local entry = {
-        name = doc_entry.name,
-        path = doc_entry.path,
-        link = doc_entry.link,
-        alias = alias,
-        next_path = next_path,
-      }
-      table.insert(entries, entry)
+  for _, alias in pairs(aliases) do
+    if index[alias] then
+      local current_entries = index[alias].entries
+
+      for idx, doc_entry in ipairs(current_entries) do
+        local next_path = nil
+        local entries_count = #current_entries
+
+        if idx < entries_count then next_path = current_entries[idx + 1].path end
+
+        local entry = {
+          name = doc_entry.name,
+          path = doc_entry.path,
+          link = doc_entry.link,
+          alias = alias,
+          next_path = next_path,
+        }
+
+        table.insert(entries, entry)
+      end
     end
   end
 
@@ -323,7 +313,7 @@ M.keywordprg = function(keyword)
   local alias = state.get("current_doc")
   local float = state.get("last_mode") == "float"
   local bufnr = vim.api.nvim_create_buf(false, false)
-  local entries = M.get_entries(alias)
+  local entries = M.get_entries({ alias })
   local entry
 
   local function callback(filtered_lines)
@@ -342,6 +332,25 @@ M.keywordprg = function(keyword)
   end
 
   if not entry then notify.log("No documentation found for " .. keyword) end
+end
+
+---@param name string
+---@return string[]
+M.get_doc_variants = function(name)
+  if not REGISTERY_PATH:exists() then return {} end
+
+  local variants = {}
+  ---@type RegisteryEntry[]
+  local entries = vim.fn.json_decode(REGISTERY_PATH:read())
+
+  for _, entry in pairs(entries) do
+    if vim.startswith(entry.slug, name) then
+      local alias = entry.slug:gsub("~", "-")
+      table.insert(variants, alias)
+    end
+  end
+
+  return variants
 end
 
 return M

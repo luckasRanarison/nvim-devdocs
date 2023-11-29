@@ -28,8 +28,9 @@ end
 
 M.open_doc = function(args, float)
   if vim.tbl_isempty(args.fargs) then
-    local entries = operations.get_all_entries()
-    pickers.open_picker(entries, float)
+    local installed = list.get_installed_alias()
+    local entries = operations.get_entries(installed)
+    pickers.open_picker(entries or {}, float)
   else
     local alias = args.fargs[1]
     pickers.open_picker_alias(alias, float)
@@ -40,8 +41,20 @@ M.open_doc_float = function(args) M.open_doc(args, true) end
 
 M.open_doc_current_file = function(float)
   local filetype = vim.bo.filetype
-  local alias = filetypes[filetype] or filetype
-  pickers.open_picker_alias(alias, float)
+  local names = config.options.filetypes[filetype] or filetypes[filetype] or filetype
+
+  if type(names) == "string" then names = { names } end
+
+  local docs = vim.tbl_flatten(
+    vim.tbl_map(function(value) return operations.get_doc_variants(value) end, names)
+  )
+  local entries = operations.get_entries(docs)
+
+  if entries and not vim.tbl_isempty(entries) then
+    pickers.open_picker(entries, float)
+  else
+    notify.log_err("No documentation found for the current filetype")
+  end
 end
 
 M.update = function(args)

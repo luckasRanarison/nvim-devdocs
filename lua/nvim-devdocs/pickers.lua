@@ -194,9 +194,11 @@ end
 ---@param alias string
 ---@param float? boolean
 M.open_picker_alias = function(alias, float)
-  local entries = operations.get_entries(alias)
+  local entries = operations.get_entries({ alias })
 
-  if not entries then
+  if not entries then return end
+
+  if vim.tbl_isempty(entries) then
     notify.log_err(alias .. " documentation is not installed")
   else
     plugin_state.set("current_doc", alias)

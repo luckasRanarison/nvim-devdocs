@@ -72,6 +72,11 @@ Here is the default configuration:
 {
   dir_path = vim.fn.stdpath("data") .. "/devdocs", -- installation directory
   telescope = {}, -- passed to the telescope picker
+  filetypes = {
+    -- extends the filetype to docs mappings used by the `DevdocsOpenCurrent` command, the version doesn't have to be specified
+    -- scss = "sass",
+    -- javascript = { "node", "javascript" }
+  },
   float_win = { -- passed to nvim_open_win(), see :h api-floatwin
     relative = "editor",
     height = 25,

@@ -7,6 +7,7 @@ local list = require("nvim-devdocs.list")
 local state = require("nvim-devdocs.state")
 local notify = require("nvim-devdocs.notify")
 local config = require("nvim-devdocs.config")
+local keymaps = require("nvim-devdocs.keymaps")
 local build_docs = require("nvim-devdocs.build")
 
 local devdocs_site_url = "https://devdocs.io"
@@ -304,7 +305,7 @@ M.open = function(entry, bufnr, float)
 
   vim.bo[bufnr].keywordprg = ":DevdocsKeywordprg"
 
-  config.set_keymaps(bufnr, entry)
+  keymaps.set_keymaps(bufnr, entry)
   config.options.after_open(bufnr)
 end
 

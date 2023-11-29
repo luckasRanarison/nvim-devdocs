@@ -42,22 +42,4 @@ M.setup = function(new_config)
   return default
 end
 
----@param bufnr number
----@param entry DocEntry
-M.set_keymaps = function(bufnr, entry)
-  local slug = entry.alias:gsub("-", "~")
-  local keymaps = M.options.mappings
-  local set_buf_keymap = function(key, action, description)
-    vim.keymap.set("n", key, action, { buffer = bufnr, desc = description })
-  end
-
-  if type(keymaps.open_in_browser) == "string" and keymaps.open_in_browser ~= "" then
-    set_buf_keymap(
-      keymaps.open_in_browser,
-      function() vim.ui.open("https://devdocs.io/" .. slug .. "/" .. entry.link) end,
-      "Open in the browser"
-    )
-  end
-end
-
 return M

@@ -206,4 +206,61 @@ M.open_picker_alias = function(alias, float)
   end
 end
 
+---@param subfolder string
+M.open_picker_grep = function(subfolder)
+  if not INDEX_PATH:exists() then return end
+
+  local index = vim.fn.json_decode(INDEX_PATH:read())
+  local entry_map = {}
+
+  if subfolder == "" then
+    for name, value in pairs(index) do
+      entry_map[name] = {}
+      for _, entry in pairs(value.entries) do
+        local path = vim.fn.split(entry.path, ",")[1]
+        entry_map[name][path] = entry.name
+      end
+    end
+  else
+    entry_map[subfolder] = {}
+    for _, entry in pairs(index[subfolder].entries) do
+      local path = vim.fn.split(entry.path, ",")[1]
+      entry_map[subfolder][path] = entry.name
+    end
+  end
+
+  local entry_maker = function(entry)
+    local _, _, filename, lnum, col, text = string.find(entry, [[(..-):(%d+):(%d+):(.*)]])
+    local _, _, alias, path = string.find(filename, [[([^/]+)/?(%d+).md]])
+    local displayer = entry_display.create({
+      separator = " ",
+      items = {
+        { remaining = true },
+        { remaining = true },
+        { remaining = true },
+      },
+    })
+
+    return {
+      filename = DOCS_DIR:joinpath(subfolder, filename).filename,
+      lnum = tonumber(lnum),
+      col = tonumber(col),
+      ordinal = entry,
+      display = function()
+        local entry_name = entry_map[alias or subfolder][path]
+        return displayer({
+          { string.format("[%s]", alias or subfolder), "markdownH1" },
+          { entry_name or "Unlisted", "markdownH2" },
+          { text, "Comment" },
+        })
+      end,
+    }
+  end
+
+  require("telescope.builtin").live_grep({
+    entry_maker = entry_maker,
+    cwd = DOCS_DIR:joinpath(subfolder).filename,
+  })
+end
+
 return M

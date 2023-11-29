@@ -176,11 +176,7 @@ M.open_picker = function(entries, float)
         local selection = action_state.get_selected_entry()
 
         if selection then
-          local name = selection.value.name
-          local match = name:match("%[([^%]]+)%]")
-
-          if match then plugin_state.set("current_doc", match) end
-
+          plugin_state.set("current_doc", selection.value.alias)
           open_doc(selection, float)
         end
       end)

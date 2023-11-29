@@ -323,13 +323,14 @@ function transpiler:eval(node)
   local id = attributes.id
 
   if id and self.section_map and vim.tbl_contains(self.section_map, id) then
-    table.insert(self.sections, {id = id, md_path = vim.trim(result)})
+    table.insert(self.sections, { id = id, md_path = vim.trim(result) })
   end
 
   return result
 end
 
 ---@param node TSNode
+---@param parent_node TSNode
 ---@return string
 function transpiler:eval_child(node, parent_node)
   local result = self:eval(node)

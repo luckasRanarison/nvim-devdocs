@@ -12,10 +12,11 @@
 ---@field attribution string
 
 ---Represents an entry in the index.json file
----NOTE: alias is filled at runtime
+---NOTE: alias and next_path are filled at runtime
 ---@see nvim_devdocs_path/index.json
 ---@class DocEntry
 ---@field name string
 ---@field path string
 ---@field link string
----@field alias string
+---@field alias? string
+---@field next_path? string

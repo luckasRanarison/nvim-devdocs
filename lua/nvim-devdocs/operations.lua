@@ -177,15 +177,13 @@ M.get_all_entries = function()
     local entries_count = #index.entries
     for idx, doc_entry in ipairs(index.entries) do
       local next_path = nil
-      if idx < entries_count then
-        next_path = index.entries[idx+1].path
-      end
+      if idx < entries_count then next_path = index.entries[idx + 1].path end
       local entry = {
-        name = string.format("[%s] %s", alias, doc_entry.name),
-        alias = alias,
+        name = doc_entry.name,
         path = doc_entry.path,
-        next_path = next_path,
         link = doc_entry.link,
+        alias = alias,
+        next_path = next_path,
       }
       table.insert(entries, entry)
     end
@@ -204,9 +202,7 @@ M.read_entry = function(entry, callback)
   file_path:_read_async(vim.schedule_wrap(function(content)
     local pattern = splited_path[2]
     local next_pattern = nil
-    if entry.next_path ~= nil then
-      next_pattern = vim.split(entry.next_path, ",")[2]
-    end
+    if entry.next_path ~= nil then next_pattern = vim.split(entry.next_path, ",")[2] end
     local lines = vim.split(content, "\n")
     local filtered_lines = M.filter_doc(lines, pattern, next_pattern)
 
@@ -305,6 +301,7 @@ M.open = function(entry, bufnr, float)
     vim.wo[win].linebreak = config.options.wrap
     vim.wo[win].nu = false
     vim.wo[win].relativenumber = false
+    vim.wo[win].conceallevel = 3
   end
 
   local ignore = vim.tbl_contains(config.options.cmd_ignore, entry.alias)

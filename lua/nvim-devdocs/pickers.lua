@@ -7,6 +7,7 @@ local state = require("telescope.state")
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 local config = require("telescope.config").values
+local entry_display = require("telescope.pickers.entry_display")
 
 local list = require("nvim-devdocs.list")
 local notify = require("nvim-devdocs.notify")
@@ -141,6 +142,14 @@ end
 ---@param entries DocEntry[]
 ---@param float? boolean
 M.open_picker = function(entries, float)
+  local displayer = entry_display.create({
+    separator = " ",
+    items = {
+      { remaining = true },
+      { remaining = true },
+    },
+  })
+
   local picker = pickers.new(plugin_config.options.telescope, {
     prompt_title = "Select an entry",
     finder = finders.new_table({
@@ -148,8 +157,13 @@ M.open_picker = function(entries, float)
       entry_maker = function(entry)
         return {
           value = entry,
-          display = entry.name,
-          ordinal = entry.name,
+          display = function()
+            return displayer({
+              { string.format("[%s]", entry.alias), "markdownH1" },
+              { entry.name, "markdownH2" },
+            })
+          end,
+          ordinal = string.format("[%s] %s", entry.alias, entry.name),
         }
       end,
     }),
@@ -160,6 +174,7 @@ M.open_picker = function(entries, float)
         actions.close(prompt_bufnr)
 
         local selection = action_state.get_selected_entry()
+
         if selection then
           local name = selection.value.name
           local match = name:match("%[([^%]]+)%]")

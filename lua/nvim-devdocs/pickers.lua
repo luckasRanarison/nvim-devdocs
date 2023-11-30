@@ -57,7 +57,7 @@ local doc_previewer = previewers.new_buffer_previewer({
   define_preview = function(self, entry)
     local bufnr = self.state.bufnr
 
-    operations.read_entry(entry.value, function(filtered_lines)
+    operations.read_entry_async(entry.value, function(filtered_lines)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 
       if plugin_config.options.previewer_cmd and plugin_config.options.picker_cmd then
@@ -71,14 +71,12 @@ local doc_previewer = previewers.new_buffer_previewer({
 })
 
 local function open_doc(selection, float)
-  local bufnr = nil
+  local bufnr = state.get_global_key("last_preview_bufnr")
 
-  if plugin_config.options.picker_cmd then
+  if plugin_config.options.picker_cmd or not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     bufnr = vim.api.nvim_create_buf(false, true)
-    local lines = plugin_state.get("preview_lines")
+    local lines = plugin_state.get("preview_lines") or operations.read_entry(selection.value)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-  else
-    bufnr = state.get_global_key("last_preview_bufnr")
   end
 
   plugin_state.set("last_mode", float and "float" or "normal")

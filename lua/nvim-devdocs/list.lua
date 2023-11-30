@@ -67,7 +67,7 @@ local function get_registery_entry(predicate)
   local registery = fs.read_registery()
 
   if not registery then
-    notify.log_err("Devdocs registery not found, please run :DevdocsFetch")
+    notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
     return
   end
 

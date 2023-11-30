@@ -6,13 +6,13 @@ M.write_registery = function(registery)
   REGISTERY_PATH:write(encoded, "w")
 end
 
----@param index IndexObject
+---@param index IndexTable
 M.write_index = function(index)
   local encoded = vim.fn.json_encode(index)
   INDEX_PATH:write(encoded, "w")
 end
 
----@param lockfile table<string, RegisteryEntry>
+---@param lockfile LockTable
 M.write_lockfile = function(lockfile)
   local encoded = vim.fn.json_encode(lockfile)
   LOCK_PATH:write(encoded, "w")
@@ -25,14 +25,14 @@ M.read_registery = function()
   return vim.fn.json_decode(buf)
 end
 
----@return IndexObject?
+---@return IndexTable?
 M.read_index = function()
   if not INDEX_PATH:exists() then return end
   local buf = INDEX_PATH:read()
   return vim.fn.json_decode(buf)
 end
 
----@return table<string, RegisteryEntry>?
+---@return LockTable?
 M.read_lockfile = function()
   if not LOCK_PATH:exists() then return end
   local buf = LOCK_PATH:read()

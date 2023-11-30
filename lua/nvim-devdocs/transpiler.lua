@@ -119,13 +119,13 @@ local transpiler = {}
 
 ---HTML to Markdown transpiler
 ---@param source string the string to convert
----@param section_map table<string, string> a map of the doc sections for indexing
+---@param section_map table<string, string>? a map of the doc sections for indexing
 function transpiler:new(source, section_map)
   local new = {
     parser = vim.treesitter.get_string_parser(source, "html"),
     lines = vim.split(source, "\n"),
     result = "",
-    section_map = section_map,
+    section_map = section_map or {},
     sections = {},
   }
   new.parser:parse()
@@ -414,7 +414,7 @@ function transpiler:eval_table(node)
   end
 
   local max_col_len_map = {}
-  local result_map = {} -- the converted text of each col
+  local result_map = {}  -- the converted text of each col
   local colspan_map = {} -- colspan attribute
 
   for i, tr in ipairs(tr_nodes) do
@@ -515,8 +515,9 @@ M.to_yaml = function(entry)
   return table.concat(lines, "\n")
 end
 
+---Converts HTML to markdow
 ---@param html string
----@param section_map table<string, string>
+---@param section_map table<string, string>?
 ---@return string, table<string, string>
 M.html_to_md = function(html, section_map)
   local t = transpiler:new(html, section_map)

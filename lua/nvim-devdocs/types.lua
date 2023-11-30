@@ -33,4 +33,7 @@
 ---@field entries DocEntry[]
 
 ---Represents the index.json file
----@alias IndexObject table<string, DocIndex>
+---@alias IndexTable table<string, DocIndex>
+
+---Represents the docs-lock.json file
+---@alias LockTable table<string, RegisteryEntry>

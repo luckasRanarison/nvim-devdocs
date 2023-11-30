@@ -151,8 +151,26 @@ M.uninstall = function(alias)
 end
 
 ---@param entry DocEntry
+---@return string[]
+M.read_entry = function(entry)
+  local splited_path = vim.split(entry.path, ",")
+  local file = splited_path[1]
+  local file_path = DOCS_DIR:joinpath(entry.alias, file .. ".md")
+  local content = file_path:read()
+  local pattern = splited_path[2]
+  local next_pattern = nil
+
+  if entry.next_path ~= nil then next_pattern = vim.split(entry.next_path, ",")[2] end
+
+  local lines = vim.split(content, "\n")
+  local filtered_lines = M.filter_doc(lines, pattern, next_pattern)
+
+  return filtered_lines
+end
+
+---@param entry DocEntry
 ---@param callback function
-M.read_entry = function(entry, callback)
+M.read_entry_async = function(entry, callback)
   local splited_path = vim.split(entry.path, ",")
   local file = splited_path[1]
   local file_path = DOCS_DIR:joinpath(entry.alias, file .. ".md")
@@ -160,7 +178,9 @@ M.read_entry = function(entry, callback)
   file_path:_read_async(vim.schedule_wrap(function(content)
     local pattern = splited_path[2]
     local next_pattern = nil
+
     if entry.next_path ~= nil then next_pattern = vim.split(entry.next_path, ",")[2] end
+
     local lines = vim.split(content, "\n")
     local filtered_lines = M.filter_doc(lines, pattern, next_pattern)
 
@@ -289,7 +309,7 @@ M.keywordprg = function(keyword)
   for _, value in pairs(entries or {}) do
     if value.name == keyword or value.link == keyword then
       entry = value
-      M.read_entry(entry, callback)
+      M.read_entry_async(entry, callback)
     end
   end
 

@@ -79,7 +79,7 @@ M.toggle = function()
   local buf = state.get("last_buf")
   local win = state.get("last_win")
 
-  if not buf then return end
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then return end
 
   if win and vim.api.nvim_win_is_valid(win) then
     vim.api.nvim_win_close(win, true)

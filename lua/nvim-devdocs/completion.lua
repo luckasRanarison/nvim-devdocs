@@ -5,11 +5,10 @@ local list = require("nvim-devdocs.list")
 ---@param args string[]
 ---@param arg_lead string
 local function filter_args(args, arg_lead)
-  return vim.tbl_filter(function(entry)
-    local starts_with = string.find(entry, arg_lead, 1, true) == 1
-    if starts_with then return true end
-    return false
+  local filtered = vim.tbl_filter(function(entry)
+    return vim.startswith(entry, arg_lead)
   end, args)
+  return filtered
 end
 
 M.get_installed = function(arg_lead)

@@ -221,7 +221,7 @@ M.render_cmd = function(bufnr, is_picker)
         pcall(function() vim.api.nvim_chan_send(chan, line .. "\r\n") end)
       end
     end),
-    writer = table.concat(lines, "\n"),
+    writer = lines,
   })
 
   previewer:start()

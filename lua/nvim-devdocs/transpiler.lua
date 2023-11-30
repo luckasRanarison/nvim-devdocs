@@ -2,14 +2,20 @@
 local M = {}
 
 local normalize_html = function(str)
-  str = str:gsub("&lt;", "<")
-  str = str:gsub("&gt;", ">")
-  str = str:gsub("&amp;", "&")
-  str = str:gsub("&quot;", '"')
-  str = str:gsub("&apos;", "'")
-  str = str:gsub("&nbsp;", " ")
-  str = str:gsub("&copy;", "©")
-  str = str:gsub("&ndash;", "–")
+  local symbol_map = {
+    ["&lt;"] = "<",
+    ["&gt;"] = ">",
+    ["&amp;"] = "&",
+    ["&quot;"] = '"',
+    ["&apos;"] = "'",
+    ["&nbsp;"] = " ",
+    ["&copy;"] = "©",
+    ["&ndash;"] = "–",
+  }
+
+  for key, value in pairs(symbol_map) do
+    str = str:gsub(key, value)
+  end
 
   return str
 end
@@ -113,13 +119,13 @@ local transpiler = {}
 
 ---HTML to Markdown transpiler
 ---@param source string the string to convert
----@param section_map table<string, string> a map of the doc sections for indexing
+---@param section_map table<string, string>? a map of the doc sections for indexing
 function transpiler:new(source, section_map)
   local new = {
     parser = vim.treesitter.get_string_parser(source, "html"),
     lines = vim.split(source, "\n"),
     result = "",
-    section_map = section_map,
+    section_map = section_map or {},
     sections = {},
   }
   new.parser:parse()
@@ -310,8 +316,8 @@ function transpiler:eval(node)
     else
       local map = tag_mappings[tag_name]
       if map then
-        local left = map.left and map.left or ""
-        local right = map.right and map.right or ""
+        local left = map.left or ""
+        local right = map.right or ""
         result = left .. result .. right
       else
         result = result .. node_text
@@ -345,6 +351,7 @@ function transpiler:eval_child(node, parent_node)
 
     -- The <pre> HTML element represents preformatted text
     -- which is to be presented exactly as written in the HTML file
+    -- FIXME: this implementation is still not completetely corect
     if self:has_parent_tag(node, "pre") or attributes.class == "_rfc-pre" then
       local child = sibling:named_child()
 
@@ -360,8 +367,7 @@ function transpiler:eval_child(node, parent_node)
           else
             start_row, start_col = c_row, c_col
             target_row, target_col = s_row, s_col
-
-            if child_sibling:type() == "text" or "entity" then break end
+            break
           end
         else
           break
@@ -408,7 +414,7 @@ function transpiler:eval_table(node)
   end
 
   local max_col_len_map = {}
-  local result_map = {} -- the converted text of each col
+  local result_map = {}  -- the converted text of each col
   local colspan_map = {} -- colspan attribute
 
   for i, tr in ipairs(tr_nodes) do
@@ -509,8 +515,9 @@ M.to_yaml = function(entry)
   return table.concat(lines, "\n")
 end
 
+---Converts HTML to markdow
 ---@param html string
----@param section_map table<string, string>
+---@param section_map table<string, string>?
 ---@return string, table<string, string>
 M.html_to_md = function(html, section_map)
   local t = transpiler:new(html, section_map)

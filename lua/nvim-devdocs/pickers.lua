@@ -16,7 +16,23 @@ local transpiler = require("nvim-devdocs.transpiler")
 local plugin_state = require("nvim-devdocs.state")
 local plugin_config = require("nvim-devdocs.config")
 
-local new_docs_picker = function(prompt, entries, previewer, attach)
+local metadata_previewer = previewers.new_buffer_previewer({
+  title = "Metadata",
+  define_preview = function(self, entry)
+    local bufnr = self.state.bufnr
+    local transpiled = transpiler.to_yaml(entry.value)
+    local lines = vim.split(transpiled, "\n")
+
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.bo[bufnr].ft = "yaml"
+  end,
+})
+
+---@param prompt string
+---@param entries RegisteryEntry[]
+---@param on_attach function
+---@return Picker
+local function new_registery_picker(prompt, entries, on_attach)
   return pickers.new(plugin_config.options.telescope, {
     prompt_title = prompt,
     finder = finders.new_table({
@@ -30,22 +46,10 @@ local new_docs_picker = function(prompt, entries, previewer, attach)
       end,
     }),
     sorter = config.generic_sorter(plugin_config.options.telescope),
-    previewer = previewer,
-    attach_mappings = attach,
+    previewer = metadata_previewer,
+    attach_mappings = on_attach,
   })
 end
-
-local metadata_previewer = previewers.new_buffer_previewer({
-  title = "Metadata",
-  define_preview = function(self, entry)
-    local bufnr = self.state.bufnr
-    local transpiled = transpiler.to_yaml(entry.value)
-    local lines = vim.split(transpiled, "\n")
-
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-    vim.bo[bufnr].ft = "yaml"
-  end,
-})
 
 local doc_previewer = previewers.new_buffer_previewer({
   title = "Preview",
@@ -66,7 +70,7 @@ local doc_previewer = previewers.new_buffer_previewer({
   end,
 })
 
-local open_doc = function(selection, float)
+local function open_doc(selection, float)
   local bufnr = nil
 
   if plugin_config.options.picker_cmd then
@@ -82,14 +86,11 @@ local open_doc = function(selection, float)
 end
 
 M.installation_picker = function()
-  if not REGISTERY_PATH:exists() then
-    notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
-    return
-  end
+  local non_installed = list.get_non_installed_registery()
 
-  local content = REGISTERY_PATH:read()
-  local parsed = vim.fn.json_decode(content)
-  local picker = new_docs_picker("Install documentation", parsed, metadata_previewer, function()
+  if not non_installed then return end
+
+  local picker = new_registery_picker("Install documentation", non_installed, function()
     actions.select_default:replace(function(prompt_bufnr)
       local selection = action_state.get_selected_entry()
 
@@ -103,29 +104,30 @@ M.installation_picker = function()
 end
 
 M.uninstallation_picker = function()
-  local installed = list.get_installed_entry()
-  local picker = new_docs_picker(
-    "Uninstall documentation",
-    installed,
-    metadata_previewer,
-    function()
-      actions.select_default:replace(function(prompt_bufnr)
-        local selection = action_state.get_selected_entry()
-        local alias = selection.value.slug:gsub("~", "-")
+  local installed = list.get_installed_registery()
 
-        actions.close(prompt_bufnr)
-        operations.uninstall(alias)
-      end)
-      return true
-    end
-  )
+  if not installed then return end
+
+  local picker = new_registery_picker("Uninstall documentation", installed, function()
+    actions.select_default:replace(function(prompt_bufnr)
+      local selection = action_state.get_selected_entry()
+      local alias = selection.value.slug:gsub("~", "-")
+
+      actions.close(prompt_bufnr)
+      operations.uninstall(alias)
+    end)
+    return true
+  end)
 
   picker:find()
 end
 
 M.update_picker = function()
-  local installed = list.get_updatable()
-  local picker = new_docs_picker("Update documentation", installed, metadata_previewer, function()
+  local updatable = list.get_updatable_registery()
+
+  if not updatable then return end
+
+  local picker = new_registery_picker("Update documentation", updatable, function()
     actions.select_default:replace(function(prompt_bufnr)
       local selection = action_state.get_selected_entry()
       local alias = selection.value.slug:gsub("~", "-")
@@ -190,7 +192,7 @@ end
 ---@param alias string
 ---@param float? boolean
 M.open_picker_alias = function(alias, float)
-  local entries = operations.get_entries({ alias })
+  local entries = list.get_doc_entries({ alias })
 
   if not entries then return end
 

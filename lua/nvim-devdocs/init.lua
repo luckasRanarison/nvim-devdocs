@@ -9,7 +9,7 @@ local config = require("nvim-devdocs.config")
 local completion = require("nvim-devdocs.completion")
 local filetypes = require("nvim-devdocs.filetypes")
 
-M.fetch_registery = function() operations.fetch() end
+M.fetch_registery = operations.fetch
 
 M.install_doc = function(args)
   if vim.tbl_isempty(args.fargs) then
@@ -30,7 +30,7 @@ end
 M.open_doc = function(args, float)
   if vim.tbl_isempty(args.fargs) then
     local installed = list.get_installed_alias()
-    local entries = operations.get_entries(installed)
+    local entries = list.get_doc_entries(installed)
     pickers.open_picker(entries or {}, float)
   else
     local alias = args.fargs[1]
@@ -46,10 +46,9 @@ M.open_doc_current_file = function(float)
 
   if type(names) == "string" then names = { names } end
 
-  local docs = vim.tbl_flatten(
-    vim.tbl_map(function(value) return operations.get_doc_variants(value) end, names)
-  )
-  local entries = operations.get_entries(docs)
+  local docs =
+    vim.tbl_flatten(vim.tbl_map(function(name) return list.get_doc_variants(name) end, names))
+  local entries = list.get_doc_entries(docs)
 
   if entries and not vim.tbl_isempty(entries) then
     pickers.open_picker(entries, float)

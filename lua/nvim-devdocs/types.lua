@@ -20,3 +20,20 @@
 ---@field link string
 ---@field alias? string
 ---@field next_path? string
+
+---Represents a type in the index.json file
+---@class DocType
+---@field slug string
+---@field name string
+---@field count number
+
+---Represents a doc in the index.json file
+---@class DocIndex
+---@field types DocType[]
+---@field entries DocEntry[]
+
+---Represents the index.json file
+---@alias IndexTable table<string, DocIndex>
+
+---Represents the docs-lock.json file
+---@alias LockTable table<string, RegisteryEntry>

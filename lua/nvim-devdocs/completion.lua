@@ -2,49 +2,29 @@ local M = {}
 
 local list = require("nvim-devdocs.list")
 
+---@param args string[]
 ---@param arg_lead string
----@return string[]
-M.get_non_installed = function(arg_lead)
-  if not REGISTERY_PATH:exists() then return {} end
-
-  local content = REGISTERY_PATH:read()
-  local parsed = vim.fn.json_decode(content)
-  local installed = list.get_installed_alias()
-  local args = {}
-
-  for _, entry in pairs(parsed) do
-    local arg = entry.slug:gsub("~", "-")
-    local starts_with = string.find(arg, arg_lead, 1, true) == 1
-    if starts_with and not vim.tbl_contains(installed, arg) then table.insert(args, arg) end
-  end
-
-  return args
+local function filter_args(args, arg_lead)
+  return vim.tbl_filter(function(entry)
+    local starts_with = string.find(entry, arg_lead, 1, true) == 1
+    if starts_with then return true end
+    return false
+  end, args)
 end
 
----@param arg_lead string
----@return string[]
 M.get_installed = function(arg_lead)
   local installed = list.get_installed_alias()
-  local args = vim.tbl_filter(function(entry)
-    local starts_with = string.find(entry, arg_lead, 1, true) == 1
-    if starts_with then return true end
-    return false
-  end, installed)
-
-  return args
+  return filter_args(installed, arg_lead)
 end
 
----@param arg_lead string
----@return string[]
+M.get_non_installed = function(arg_lead)
+  local non_installed = list.get_non_installed_alias()
+  return filter_args(non_installed, arg_lead)
+end
+
 M.get_updatable = function(arg_lead)
   local updatable = list.get_updatable()
-  local args = vim.tbl_filter(function(entry)
-    local starts_with = string.find(entry, arg_lead, 1, true) == 1
-    if starts_with then return true end
-    return false
-  end, updatable)
-
-  return args
+  return filter_args(updatable, arg_lead)
 end
 
 return M

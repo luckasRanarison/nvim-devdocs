@@ -3,12 +3,13 @@ local M = {}
 local job = require("plenary.job")
 local curl = require("plenary.curl")
 
+local fs = require("nvim-devdocs.fs")
 local list = require("nvim-devdocs.list")
 local state = require("nvim-devdocs.state")
+local build = require("nvim-devdocs.build")
 local notify = require("nvim-devdocs.notify")
 local config = require("nvim-devdocs.config")
 local keymaps = require("nvim-devdocs.keymaps")
-local build_docs = require("nvim-devdocs.build")
 
 local devdocs_site_url = "https://devdocs.io"
 local devdocs_cdn_url = "https://documents.devdocs.io"
@@ -22,7 +23,7 @@ M.fetch = function()
     },
     callback = function(response)
       if not DATA_DIR:exists() then DATA_DIR:mkdir() end
-      REGISTERY_PATH:write(response.body, "w", 438)
+      REGISTERY_PATH:write(response.body, "w")
       notify.log("DevDocs registery has been written to the disk")
     end,
     on_error = function(error)
@@ -64,7 +65,7 @@ M.install = function(entry, verbose, is_update)
       curl.get(doc_url, {
         callback = vim.schedule_wrap(function(response)
           local docs = vim.fn.json_decode(response.body)
-          build_docs(entry, index, docs)
+          build.build_docs(entry, index, docs)
         end),
         on_error = function(error)
           notify.log_err(
@@ -95,20 +96,19 @@ end
 ---@param verbose? boolean
 ---@param is_update? boolean
 M.install_args = function(args, verbose, is_update)
-  if not REGISTERY_PATH:exists() then
+  local updatable = list.get_updatable()
+  local registery = fs.read_registery()
+
+  if not registery then
     if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
     return
   end
-
-  local updatable = list.get_updatable()
-  local content = REGISTERY_PATH:read()
-  local parsed = vim.fn.json_decode(content)
 
   for _, arg in ipairs(args) do
     local slug = arg:gsub("-", "~")
     local data = {}
 
-    for _, entry in ipairs(parsed) do
+    for _, entry in ipairs(registery) do
       if entry.slug == slug then
         data = entry
         break
@@ -134,53 +134,20 @@ M.uninstall = function(alias)
   if not vim.tbl_contains(installed, alias) then
     notify.log(alias .. " documentation is already uninstalled")
   else
-    local index = vim.fn.json_decode(INDEX_PATH:read())
-    local lockfile = vim.fn.json_decode(LOCK_PATH:read())
-    local doc_path = DOCS_DIR:joinpath(alias)
+    local index = fs.read_index()
+    local lockfile = fs.read_lockfile()
+
+    if not index or not lockfile then return end
 
     index[alias] = nil
     lockfile[alias] = nil
 
-    INDEX_PATH:write(vim.fn.json_encode(index), "w")
-    LOCK_PATH:write(vim.fn.json_encode(lockfile), "w")
-    doc_path:rm({ recursive = true })
+    fs.write_index(index)
+    fs.write_lockfile(lockfile)
+    fs.remove_docs(alias)
 
     notify.log(alias .. " documentation has been uninstalled")
   end
-end
-
----@param aliases string[]
----@return DocEntry[] | nil
-M.get_entries = function(aliases)
-  if not INDEX_PATH:exists() then return end
-
-  local entries = {}
-  local index = vim.fn.json_decode(INDEX_PATH:read())
-
-  for _, alias in pairs(aliases) do
-    if index[alias] then
-      local current_entries = index[alias].entries
-
-      for idx, doc_entry in ipairs(current_entries) do
-        local next_path = nil
-        local entries_count = #current_entries
-
-        if idx < entries_count then next_path = current_entries[idx + 1].path end
-
-        local entry = {
-          name = doc_entry.name,
-          path = doc_entry.path,
-          link = doc_entry.link,
-          alias = alias,
-          next_path = next_path,
-        }
-
-        table.insert(entries, entry)
-      end
-    end
-  end
-
-  return entries
 end
 
 ---@param entry DocEntry
@@ -217,6 +184,7 @@ M.filter_doc = function(lines, pattern, next_pattern)
   local pattern_lines = vim.split(pattern, "\n")
   local search_pattern = create_pattern(pattern_lines[1]) -- only search the first line
   local next_search_pattern = nil
+
   if next_pattern then
     local next_pattern_lines = vim.split(next_pattern, "\n")
     next_search_pattern = create_pattern(next_pattern_lines[1]) -- only search the first line
@@ -307,7 +275,7 @@ M.keywordprg = function(keyword)
   local alias = state.get("current_doc")
   local float = state.get("last_mode") == "float"
   local bufnr = vim.api.nvim_create_buf(false, false)
-  local entries = M.get_entries({ alias })
+  local entries = list.get_doc_entries({ alias })
   local entry
 
   local function callback(filtered_lines)
@@ -326,25 +294,6 @@ M.keywordprg = function(keyword)
   end
 
   if not entry then notify.log("No documentation found for " .. keyword) end
-end
-
----@param name string
----@return string[]
-M.get_doc_variants = function(name)
-  if not REGISTERY_PATH:exists() then return {} end
-
-  local variants = {}
-  ---@type RegisteryEntry[]
-  local entries = vim.fn.json_decode(REGISTERY_PATH:read())
-
-  for _, entry in pairs(entries) do
-    if vim.startswith(entry.slug, name) then
-      local alias = entry.slug:gsub("~", "-")
-      table.insert(variants, alias)
-    end
-  end
-
-  return variants
 end
 
 return M

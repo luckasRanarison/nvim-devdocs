@@ -264,6 +264,7 @@ function transpiler:eval(node)
   local result = ""
   local node_type = node:type()
   local node_text = self:get_node_text(node)
+  local tag_name = self:get_node_tag_name(node)
   local attributes = self:get_node_attributes(node)
 
   if node_type == "text" or node_type == "entity" then
@@ -271,7 +272,6 @@ function transpiler:eval(node)
   elseif node_type == "element" then
     local tag_node = node:named_child()
     local tag_type = tag_node:type()
-    local tag_name = self:get_node_tag_name(node)
     local parent_node = node:parent()
     local parent_tag_name = self:get_node_tag_name(parent_node)
 
@@ -325,6 +325,19 @@ function transpiler:eval(node)
     end
   end
 
+  local parent = node:parent()
+  local sibling = node:next_named_sibling()
+
+  -- checks if there should be additional spaces or linebreaks
+  if parent and parent:type() == "fragment" and sibling then
+    local start_row, start_col = node:end_()
+    local target_row, target_col = sibling:start()
+    local is_inline = is_inline_tag(tag_name) or not tag_name -- is text
+
+    if is_inline and start_col ~= target_col then result = result .. " " end
+    if is_inline then result = result .. string.rep("\n", target_row - start_row) end
+  end
+
   -- use the Markdown text for indexing docs in the index.json file
   local id = attributes.id
 
@@ -358,6 +371,7 @@ function transpiler:eval_child(node, parent_node)
       -- skip all the tags to get the actual text offset, see #56
       while child do
         local child_sibling = child:next_named_sibling()
+
         if child:type() == "start_tag" and child_sibling then
           local c_row, c_col = child:end_()
           local s_row, s_col = child_sibling:start()
@@ -375,8 +389,10 @@ function transpiler:eval_child(node, parent_node)
       end
 
       local row, col = start_row, start_col
+
       while row ~= target_row or col ~= target_col do
         local char = self:get_text_range(row, col, row, col + 1)
+
         if char ~= "" then
           result = result .. char
           col = col + 1
@@ -387,7 +403,9 @@ function transpiler:eval_child(node, parent_node)
       end
     else
       local is_inline = is_inline_tag(tag_name) or not tag_name -- is text
+
       if is_inline and start_col ~= target_col then result = result .. " " end
+      if is_inline then result = result .. string.rep("\n", target_row - start_row) end
     end
   end
 
@@ -414,7 +432,7 @@ function transpiler:eval_table(node)
   end
 
   local max_col_len_map = {}
-  local result_map = {}  -- the converted text of each col
+  local result_map = {} -- the converted text of each col
   local colspan_map = {} -- colspan attribute
 
   for i, tr in ipairs(tr_nodes) do
@@ -515,7 +533,7 @@ M.to_yaml = function(entry)
   return table.concat(lines, "\n")
 end
 
----Converts HTML to markdow
+---Converts HTML to markdown
 ---@param html string
 ---@param section_map table<string, string>?
 ---@return string, table<string, string>

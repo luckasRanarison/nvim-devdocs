@@ -82,6 +82,7 @@ local inline_tags = {
   "tt",
   "i",
   "s",
+  "b",
   "sub",
   "sup",
   "mark",

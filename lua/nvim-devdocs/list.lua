@@ -1,7 +1,7 @@
 local M = {}
 
 local fs = require("nvim-devdocs.fs")
-local notify = require("nvim-devdocs.notify")
+local log = require("nvim-devdocs.log")
 
 ---@return string[]
 M.get_installed_alias = function()
@@ -67,7 +67,7 @@ local function get_registery_entry(predicate)
   local registery = fs.read_registery()
 
   if not registery then
-    notify.log_err("DevDocs registery not found, please run :DevdocsFetch")
+    log.error("DevDocs registery not found, please run :DevdocsFetch")
     return
   end
 

@@ -1,10 +1,7 @@
 local M = {}
 
----@param registery RegisteryEntry[]
-M.write_registery = function(registery)
-  local encoded = vim.fn.json_encode(registery)
-  REGISTERY_PATH:write(encoded, "w")
-end
+---@param registery string
+M.write_registery = function(registery) REGISTERY_PATH:write(registery, "w") end
 
 ---@param index IndexTable
 M.write_index = function(index)

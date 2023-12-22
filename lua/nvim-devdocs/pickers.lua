@@ -9,8 +9,8 @@ local action_state = require("telescope.actions.state")
 local config = require("telescope.config").values
 local entry_display = require("telescope.pickers.entry_display")
 
+local log = require("nvim-devdocs.log")
 local list = require("nvim-devdocs.list")
-local notify = require("nvim-devdocs.notify")
 local operations = require("nvim-devdocs.operations")
 local transpiler = require("nvim-devdocs.transpiler")
 local plugin_state = require("nvim-devdocs.state")
@@ -72,8 +72,9 @@ local doc_previewer = previewers.new_buffer_previewer({
 
 local function open_doc(selection, float)
   local bufnr = state.get_global_key("last_preview_bufnr")
+  local picker_cmd = plugin_config.options.picker_cmd
 
-  if plugin_config.options.picker_cmd or not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+  if picker_cmd or not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     bufnr = vim.api.nvim_create_buf(false, true)
     local lines = plugin_state.get("preview_lines") or operations.read_entry(selection.value)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
@@ -180,6 +181,7 @@ M.open_picker = function(entries, float)
           open_doc(selection, float)
         end
       end)
+
       return true
     end,
   })
@@ -195,7 +197,7 @@ M.open_picker_alias = function(alias, float)
   if not entries then return end
 
   if vim.tbl_isempty(entries) then
-    notify.log_err(alias .. " documentation is not installed")
+    log.error(alias .. " documentation is not installed")
   else
     plugin_state.set("current_doc", alias)
     M.open_picker(entries, float)

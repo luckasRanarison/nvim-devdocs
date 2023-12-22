@@ -1,8 +1,8 @@
 local M = {}
 
+local log = require("nvim-devdocs.log")
 local list = require("nvim-devdocs.list")
 local state = require("nvim-devdocs.state")
-local notify = require("nvim-devdocs.notify")
 local pickers = require("nvim-devdocs.pickers")
 local operations = require("nvim-devdocs.operations")
 local config = require("nvim-devdocs.config")
@@ -29,11 +29,13 @@ end
 
 M.open_doc = function(args, float)
   if vim.tbl_isempty(args.fargs) then
+    log.debug("Opening all installed entries")
     local installed = list.get_installed_alias()
     local entries = list.get_doc_entries(installed)
     pickers.open_picker(entries or {}, float)
   else
     local alias = args.fargs[1]
+    log.debug("Opening " .. alias .. " entries")
     pickers.open_picker_alias(alias, float)
   end
 end
@@ -53,7 +55,7 @@ M.open_doc_current_file = function(float)
   if entries and not vim.tbl_isempty(entries) then
     pickers.open_picker(entries, float)
   else
-    notify.log_err("No documentation found for the current filetype")
+    log.error("No documentation found for the current filetype")
   end
 end
 
@@ -69,7 +71,7 @@ M.update_all = function()
   local updatable = list.get_updatable()
 
   if vim.tbl_isempty(updatable) then
-    notify.log("All documentations are up to date")
+    log.info("All documentations are up to date")
   else
     operations.install_args(updatable, true, true)
   end
@@ -96,16 +98,18 @@ M.keywordprg = function(args)
   if keyword then
     operations.keywordprg(keyword)
   else
-    notify.log("No keyword provided")
+    log.error("No keyword provided")
   end
 end
 
+---@param opts nvim_devdocs.Config
 M.setup = function(opts)
   config.setup(opts)
 
-  local ensure_installed = config.options.ensure_installed
-
-  vim.defer_fn(function() operations.install_args(ensure_installed) end, 3000)
+  vim.defer_fn(function()
+    log.debug("Installing required docs")
+    operations.install_args(config.options.ensure_installed)
+  end, 3000)
 
   local cmd = vim.api.nvim_create_user_command
 
@@ -120,6 +124,8 @@ M.setup = function(opts)
   cmd("DevdocsUpdate", M.update, { nargs = "*", complete = completion.get_updatable })
   cmd("DevdocsUpdateAll", M.update_all, {})
   cmd("DevdocsToggle", M.toggle, {})
+
+  log.debug("Plugin initialized")
 end
 
 return M

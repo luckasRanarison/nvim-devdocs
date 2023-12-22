@@ -4,10 +4,10 @@ local job = require("plenary.job")
 local curl = require("plenary.curl")
 
 local fs = require("nvim-devdocs.fs")
+local log = require("nvim-devdocs.log")
 local list = require("nvim-devdocs.list")
 local state = require("nvim-devdocs.state")
 local build = require("nvim-devdocs.build")
-local notify = require("nvim-devdocs.notify")
 local config = require("nvim-devdocs.config")
 local keymaps = require("nvim-devdocs.keymaps")
 
@@ -15,19 +15,22 @@ local devdocs_site_url = "https://devdocs.io"
 local devdocs_cdn_url = "https://documents.devdocs.io"
 
 M.fetch = function()
-  notify.log("Fetching DevDocs registery...")
+  log.info("Fetching DevDocs registery...")
 
   curl.get(devdocs_site_url .. "/docs.json", {
     headers = {
       ["User-agent"] = "chrome", -- fake user agent, see #25
     },
     callback = function(response)
-      if not DATA_DIR:exists() then DATA_DIR:mkdir() end
-      REGISTERY_PATH:write(response.body, "w")
-      notify.log("DevDocs registery has been written to the disk")
+      if not DATA_DIR:exists() then
+        log.debug("Docs directory not found, creating a new directory")
+        DATA_DIR:mkdir()
+      end
+      fs.write_registery(response.body)
+      log.info("DevDocs registery has been written to the disk")
     end,
     on_error = function(error)
-      notify.log_err("nvim-devdocs: Error when fetching registery, exit code: " .. error.exit)
+      log.error("Error when fetching registery, exit code: " .. error.exit)
     end,
   })
 end
@@ -37,7 +40,7 @@ end
 ---@param is_update? boolean
 M.install = function(entry, verbose, is_update)
   if not REGISTERY_PATH:exists() then
-    if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
+    if verbose then log.error("DevDocs registery not found, please run :DevdocsFetch") end
     return
   end
 
@@ -46,11 +49,13 @@ M.install = function(entry, verbose, is_update)
   local is_installed = vim.tbl_contains(installed, alias)
 
   if not is_update and is_installed then
-    if verbose then notify.log("Documentation for " .. alias .. " is already installed") end
+    if verbose then log.warn("Documentation for " .. alias .. " is already installed") end
   else
     local ui = vim.api.nvim_list_uis()
 
     if ui[1] and entry.db_size > 10000000 then
+      log.debug(string.format("%s docs is too large (%s)", alias, entry.db_size))
+
       local input = vim.fn.input({
         prompt = "Building large docs can freeze neovim, continue? y/n ",
       })
@@ -61,32 +66,28 @@ M.install = function(entry, verbose, is_update)
     local callback = function(index)
       local doc_url = string.format("%s/%s/db.json?%s", devdocs_cdn_url, entry.slug, entry.mtime)
 
-      notify.log("Downloading " .. alias .. " documentation...")
+      log.info("Downloading " .. alias .. " documentation...")
       curl.get(doc_url, {
         callback = vim.schedule_wrap(function(response)
           local docs = vim.fn.json_decode(response.body)
           build.build_docs(entry, index, docs)
         end),
         on_error = function(error)
-          notify.log_err(
-            "nvim-devdocs[" .. alias .. "]: Error during download, exit code: " .. error.exit
-          )
+          log.error("(" .. alias .. ") Error during download, exit code: " .. error.exit)
         end,
       })
     end
 
     local index_url = string.format("%s/%s/index.json?%s", devdocs_cdn_url, entry.slug, entry.mtime)
 
-    notify.log("Fetching " .. alias .. " documentation entries...")
+    log.info("Fetching " .. alias .. " documentation entries...")
     curl.get(index_url, {
       callback = vim.schedule_wrap(function(response)
         local index = vim.fn.json_decode(response.body)
         callback(index)
       end),
       on_error = function(error)
-        notify.log_err(
-          "nvim-devdocs[" .. alias .. "]: Error during download, exit code: " .. error.exit
-        )
+        log.error("(" .. alias .. ") Error during download, exit code: " .. error.exit)
       end,
     })
   end
@@ -100,7 +101,7 @@ M.install_args = function(args, verbose, is_update)
   local registery = fs.read_registery()
 
   if not registery then
-    if verbose then notify.log_err("DevDocs registery not found, please run :DevdocsFetch") end
+    if verbose then log.error("DevDocs registery not found, please run :DevdocsFetch") end
     return
   end
 
@@ -116,10 +117,10 @@ M.install_args = function(args, verbose, is_update)
     end
 
     if vim.tbl_isempty(data) then
-      notify.log_err("No documentation available for " .. arg)
+      log.error("No documentation available for " .. arg)
     else
       if is_update and not vim.tbl_contains(updatable, arg) then
-        notify.log(arg .. " documentation is already up to date")
+        log.info(arg .. " documentation is already up to date")
       else
         M.install(data, verbose, is_update)
       end
@@ -132,7 +133,7 @@ M.uninstall = function(alias)
   local installed = list.get_installed_alias()
 
   if not vim.tbl_contains(installed, alias) then
-    notify.log(alias .. " documentation is already uninstalled")
+    log.info(alias .. " documentation is already uninstalled")
   else
     local index = fs.read_index()
     local lockfile = fs.read_lockfile()
@@ -146,7 +147,7 @@ M.uninstall = function(alias)
     fs.write_lockfile(lockfile)
     fs.remove_docs(alias)
 
-    notify.log(alias .. " documentation has been uninstalled")
+    log.info(alias .. " documentation has been uninstalled")
   end
 end
 
@@ -313,7 +314,7 @@ M.keywordprg = function(keyword)
     end
   end
 
-  if not entry then notify.log("No documentation found for " .. keyword) end
+  if not entry then log.error("No documentation found for " .. keyword) end
 end
 
 return M

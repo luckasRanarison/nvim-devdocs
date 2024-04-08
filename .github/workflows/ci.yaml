@@ -22,7 +22,7 @@ jobs:
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
       - name: Install parsers
         run: |
-          nvim --headless -u tests/init.lua -c "TSInstallSync html" -c "q"
+          nvim --headless -u test/init.lua -c "TSInstallSync html" -c "q"
       - name: Run Tests
         run: |
           nvim --version

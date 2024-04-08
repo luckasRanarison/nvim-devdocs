@@ -20,12 +20,9 @@ jobs:
           chmod a+x ./nvim.appimage
           ./nvim.appimage --appimage-extract
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
-      - name: Install plugins
+      - name: Install parsers
         run: |
-          nvim --headless -u test/init.lua +"sleep 60" +qa
-      - name: Install parser
-        run: |
-          nvim --headless -u test/init.lua +"silent TSInstall html" +"sleep 60" +qa
+          nvim --headless -u tests/init.lua -c "TSInstallSync html" -c "q"
       - name: Run Tests
         run: |
           nvim --version
